@@ -2,7 +2,7 @@
 Ultra-light GPU-accelerated mathematics library. Developed mostly for [NeuroG](https://github.com/Meta-chan/NeuroG).
 
 ### Dependencies
-At the moment MathG depends on [FreeGlut](http://freeglut.sourceforge.net) and [Ironic Library](https://github.com/Meta-chan/ironic_library). FreeGlut can be easily replaced with any equivalent library.
+At the moment MathG depends on [GLEW](http://glew.sourceforge.net), [SDL](https://www.libsdl.org) or [FreeGlut](http://freeglut.sourceforge.net)), and [Ironic Library](https://github.com/Meta-chan/ironic_library).
 
 ### Platforms
 Currently Windows x86 only, but in perspective can be ported on every platform that provides OpenGL API. In nearest future I plan to port it on Linux x86.

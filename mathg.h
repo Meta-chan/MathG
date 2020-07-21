@@ -11,8 +11,18 @@
 #ifndef MATHG
 #define MATHG
 
-#define FREEGLUT_STATIC
-#include <GL/freeglut.h>
+#include <GL/glew.h>
+#pragma comment (lib, "glew32.lib")
+#ifdef IR_MATHG_FREEGLUT
+	#define FREEGLUT_STATIC
+	#include <GL/freeglut.h>
+#else
+	#include <SDL.h>
+	#include <SDL_opengl.h>
+	#pragma comment (lib, "SDL2.lib")
+	#pragma comment (lib, "SDL2main.lib")
+	#pragma comment (lib, "opengl32.lib")
+#endif
 
 #define GL_ERR ((GLuint)-1)
 
@@ -105,7 +115,12 @@ class MathG
 {
 private:
 	static bool _ok;
+#ifdef IR_MATHG_FREEGLUT
 	static int _window;
+#else
+	static SDL_Window *_window;
+	static SDL_GLContext _context;
+#endif
 	static bool *_permanent;
 	static GLuint *_temporary;
 	static unsigned int _npermanent;
@@ -179,7 +194,7 @@ public:
 *Ultra-light GPU-accelerated mathematics library. Developed mostly for [NeuroG](https://github.com/Meta-chan/NeuroG).
 *
 *### Dependencies
-*At the moment MathG depends on [FreeGlut](http://freeglut.sourceforge.net) and [Ironic Library](https://github.com/Meta-chan/ironic_library). FreeGlut can be easily replaced with any equivalent library.
+*At the moment MathG depends on [GLEW](http://glew.sourceforge.net), [SDL](https://www.libsdl.org) or [FreeGlut](http://freeglut.sourceforge.net)), and [Ironic Library](https://github.com/Meta-chan/ironic_library).
 *
 *### Platforms
 *Currently Windows x86 only, but in perspective can be ported on every platform that provides OpenGL API. In nearest future I plan to port it on Linux x86.

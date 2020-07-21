@@ -12,7 +12,12 @@
 #define MATHG_VARIABLES
 
 bool MathG::_ok = false;
-int MathG::_window = 0;
+#ifdef IR_MATHG_FREEGLUT
+	int MathG::_window = 0;
+#else
+	SDL_Window *MathG::_window = nullptr;
+	SDL_GLContext MathG::_context;
+#endif
 bool *MathG::_permanent = nullptr;
 GLuint *MathG::_temporary = nullptr;
 unsigned int MathG::_npermanent = 0;

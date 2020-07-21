@@ -11,10 +11,9 @@
 #ifndef MATHG_IMPLEMENTATION
 #define MATHG_IMPLEMENTATION
 
-#define IR_RESOURCE_IMPLEMENT
-#define IR_SHADER_RESOURCE_IMPLEMENT
-#include "gl3patch.h"
-#include <shellapi.h>
+#ifdef IR_MATHG_FREEGLUT
+	#include <shellapi.h>
+#endif
 #include <stdio.h>
 #include <ir_resource/ir_shader_resource.h>
 #include "mathg_source.h"
@@ -232,6 +231,7 @@ void MathG::_unbind_object(ObjectG *object)
 
 bool MathG::init(bool print)
 {
+#ifdef IR_MATHG_FREEGLUT
 	//Making argv
 	int argc;
 	LPWSTR* wargv = CommandLineToArgvW(GetCommandLineW(), &argc);
@@ -247,10 +247,9 @@ bool MathG::init(bool print)
 		WideCharToMultiByte(CP_ACP, 0, wargv[i], -1, argv[i], len, &undefchar, NULL);
 	}
 	LocalFree(wargv);
-
 	//Initializing Freeglut
 	glutInit(&argc, argv);
-	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA);
+	glutInitDisplayMode(0);
 	glutInitContextVersion(3, 3);
 	glutInitContextFlags(GLUT_FORWARD_COMPATIBLE | GLUT_DEBUG);
 	glutInitContextProfile(GLUT_CORE_PROFILE);
@@ -260,9 +259,18 @@ bool MathG::init(bool print)
 	glutHideWindow();
 	glutDisplayFunc([](){});
 	glDisable(GLUT_MULTISAMPLE);
+#else
+	//Initializing SDL
+	if (SDL_Init(SDL_INIT_VIDEO) < 0) return false;
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
+	_window = SDL_CreateWindow("MathG", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,	100, 100, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
+	if (_window == nullptr) return false;
+	_context = SDL_GL_CreateContext(_window);
+#endif
 
-	//Applying patch
-	if (!gl3patch()) return false;
+	//Initializing GLEW
+	if (glewInit() != GLEW_OK) return false;
 
 	//Initializing tables
 	GLint ntextures;
@@ -374,7 +382,13 @@ void MathG::free()
 	if (Program::AddVVV::_program != GL_ERR) glDeleteProgram(Program::AddVVV::_program);
 	if (Program::SubtractVVV::_program != GL_ERR) glDeleteProgram(Program::SubtractVVV::_program);
 	if (Program::MultiplyMVV::_program != GL_ERR) glDeleteProgram(Program::MultiplyMVV::_program);
-	if (_window) glutDestroyWindow(_window);
+	#ifdef IR_MATHG_FREEGLUT
+		if (_window) glutDestroyWindow(_window);
+	#else
+		if (_context != nullptr) SDL_GL_DeleteContext(_context);
+		if (_window != nullptr) SDL_DestroyWindow(_window);
+	#endif
+	_ok = false;
 };
 
 #endif	//#ifndef MATHG_IMPLEMENTATION
