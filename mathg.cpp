@@ -10,7 +10,7 @@
 
 #define IR_IMPLEMENT
 //#define IR_MATHC_OPENMP
-//#define IR_MATHG_FREEGLUT
+#define IR_MATHG_SDL2
 
 #include "mathg.h"
 #include <ir_math/ir_mathc.h>
@@ -19,7 +19,7 @@
 
 #define SIZE 1000
 #define N 100
-#define ALIGN 8
+#define ALIGN 4
 
 void test()
 {

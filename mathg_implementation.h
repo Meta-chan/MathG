@@ -12,9 +12,15 @@
 #define MATHG_IMPLEMENTATION
 
 #ifdef IR_MATHG_FREEGLUT
-	#include <shellapi.h>
+	#ifdef _WIN32	
+		#include <shellapi.h>
+	#else
+		#include <unistd.h>
+	#endif
 #endif
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <ir_resource/ir_shader_resource.h>
 #include "mathg_source.h"
 #include "mathg_variables.h"
@@ -231,22 +237,31 @@ void MathG::_unbind_object(ObjectG *object)
 
 bool MathG::init(bool print)
 {
-#ifdef IR_MATHG_FREEGLUT
+#if defined(IR_MATHG_FREEGLUT)
 	//Making argv
-	int argc;
-	LPWSTR* wargv = CommandLineToArgvW(GetCommandLineW(), &argc);
-	if (wargv == nullptr) return false;
-	char **argv = (char**)calloc(argc, sizeof(char*));
-	if (argv == nullptr) return false;
-	char undefchar = '?';
-	for (int i = 0; i < argc; i++)
-	{
-		int len = WideCharToMultiByte(CP_ACP, 0, wargv[i], -1, NULL, 0, &undefchar, NULL);
-		argv[i] = (char*)calloc(len, sizeof(char));
-		if (argv[i] == nullptr) return false;
-		WideCharToMultiByte(CP_ACP, 0, wargv[i], -1, argv[i], len, &undefchar, NULL);
-	}
-	LocalFree(wargv);
+	#ifdef _WIN32
+		int argc;
+		LPWSTR* wargv = CommandLineToArgvW(GetCommandLineW(), &argc);
+		if (wargv == nullptr) return false;
+		char **argv = (char**)calloc(argc, sizeof(char*));
+		if (argv == nullptr) return false;
+		char undefchar = '?';
+		for (int i = 0; i < argc; i++)
+		{
+			int len = WideCharToMultiByte(CP_ACP, 0, wargv[i], -1, NULL, 0, &undefchar, NULL);
+			argv[i] = (char*)calloc(len, sizeof(char));
+			if (argv[i] == nullptr) return false;
+			WideCharToMultiByte(CP_ACP, 0, wargv[i], -1, argv[i], len, &undefchar, NULL);
+		}
+		LocalFree(wargv);
+	#else
+		char arg0[1024];
+		char *parg0 = arg0;
+		readlink("/proc/self/exe", parg0, 1024);
+		char **argv = &parg0;
+		int argc = 1;
+	#endif
+	
 	//Initializing Freeglut
 	glutInit(&argc, argv);
 	glutInitDisplayMode(0);
@@ -259,7 +274,7 @@ bool MathG::init(bool print)
 	glutHideWindow();
 	glutDisplayFunc([](){});
 	glDisable(GLUT_MULTISAMPLE);
-#else
+#elif defined(IR_MATHG_SDL2)
 	//Initializing SDL
 	if (SDL_Init(SDL_INIT_VIDEO) < 0) return false;
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
@@ -267,6 +282,40 @@ bool MathG::init(bool print)
 	_window = SDL_CreateWindow("MathG", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,	100, 100, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
 	if (_window == nullptr) return false;
 	_context = SDL_GL_CreateContext(_window);
+	if (_context == nullptr) return false;
+#else
+	const EGLint configAttribs[] = {
+		EGL_SURFACE_TYPE, EGL_PBUFFER_BIT,
+		EGL_BLUE_SIZE, 8,
+		EGL_GREEN_SIZE, 8,
+		EGL_RED_SIZE, 8,
+		EGL_DEPTH_SIZE, 8,
+		EGL_RENDERABLE_TYPE, EGL_OPENGL_BIT,
+		EGL_NONE };    
+
+	const int pbufferWidth = 9;
+	const int pbufferHeight = 9;
+
+	static const EGLint pbufferAttribs[] = {
+        	EGL_WIDTH, pbufferWidth,
+        	EGL_HEIGHT, pbufferHeight,
+        	EGL_NONE,
+	};
+
+	//Initializing EGL
+	_display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
+	if (_display == EGL_NO_DISPLAY) return false;
+	EGLint major, minor;
+	if (eglInitialize(_display, &major, &minor) == EGL_FALSE) return false;
+	EGLint numConfigs;
+	EGLConfig eglCfg;
+	if (!eglChooseConfig(_display, configAttribs, &eglCfg, 1, &numConfigs)) return false;
+	EGLSurface eglSurf = eglCreatePbufferSurface(_display, eglCfg, pbufferAttribs);
+	if (eglSurf == EGL_NO_SURFACE) return false;
+	if (!eglBindAPI(EGL_OPENGL_API)) return false;
+	EGLContext eglCtx = eglCreateContext(_display, eglCfg, EGL_NO_CONTEXT, NULL);
+	if (eglCtx == EGL_NO_CONTEXT) return false;
+	eglMakeCurrent(_display, eglSurf, eglSurf, eglCtx);
 #endif
 
 	//Initializing GLEW
@@ -382,11 +431,13 @@ void MathG::free()
 	if (Program::AddVVV::_program != GL_ERR) glDeleteProgram(Program::AddVVV::_program);
 	if (Program::SubtractVVV::_program != GL_ERR) glDeleteProgram(Program::SubtractVVV::_program);
 	if (Program::MultiplyMVV::_program != GL_ERR) glDeleteProgram(Program::MultiplyMVV::_program);
-	#ifdef IR_MATHG_FREEGLUT
+	#if defined(IR_MATHG_FREEGLUT)
 		if (_window) glutDestroyWindow(_window);
-	#else
+	#elif defined(IR_MATHG_SDL2)
 		if (_context != nullptr) SDL_GL_DeleteContext(_context);
 		if (_window != nullptr) SDL_DestroyWindow(_window);
+	#else
+		if (_display != EGL_NO_DISPLAY) eglTerminate(_display);
 	#endif
 	_ok = false;
 };
