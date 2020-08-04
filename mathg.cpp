@@ -10,7 +10,7 @@
 
 #define IR_IMPLEMENT
 //#define IR_MATHC_OPENMP
-#define IR_MATHG_SDL2
+#define IR_MATHG_FREEGLUT
 
 #include "mathg.h"
 #include <ir_math/ir_mathc.h>
@@ -66,7 +66,7 @@ void test()
 	return;
 };
 
-int main(int argc, char **argv)
+int main(int argc, char *argv[])
 {
 	if (MathG::init(true))
 	{
