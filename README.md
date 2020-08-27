@@ -1,8 +1,8 @@
 # Welcome to MathG!
-Ultra-light GPU-accelerated mathematics library. Developed mostly for [NeuroG](https://github.com/Meta-chan/NeuroG).
+Ultra-light GPU-accelerated **extendable** mathematics library. Developed mostly for [NeuroG](https://github.com/Meta-chan/NeuroG).
 
 ### Platforms
-Currently Windows x86 only, but in perspective can be ported on every platform that provides OpenGL API. In nearest future I plan to port it on Linux x86.
+Compiled and tested on Windows x86/x64, compiled on Linux x86. In perspective can be ported on every platform that provides OpenGL API.
 
 ### Usage
 The installation process is integrated with [Ironic Library](https://github.com/Meta-chan/ironic_library), follow the link for more. But in a nutshell, you can do just this:

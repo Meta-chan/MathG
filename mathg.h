@@ -40,6 +40,13 @@ class MathG;
 		GLuint _texture			= GL_ERR;
 		GLuint _framebuffer		= GL_ERR;
 		bool _ok				= false;
+		bool _matrix			= false;
+
+	public:
+		///Returns if object is all right
+		bool ok();
+		///Returns if object is matrix
+		bool matrix();
 	};
 #endif
 
@@ -115,21 +122,41 @@ public:
 ///@remark All vectors and matrices passed, both arguments and results, need to be @b different! Otherwise functions will fail.
 class MathG
 {
-private:
-	static bool _ok;
-#if defined(IR_MATHG_FREEGLUT)
-	static int _window;
-#elif defined(IR_MATHG_SDL2)
-	static SDL_Window *_window;
-	static SDL_GLContext _context;
-#else
-	static EGLDisplay _display;
-#endif
-	static bool *_permanent;
-	static GLuint *_temporary;
-	static unsigned int _npermanent;
-	static unsigned int _ntemporary;
+public:
+	///Structure to be passed as argument
+	union Argument
+	{
+		int i;
+		unsigned int u;
+		float f;
+		ObjectG *o;
+		VectorG *v;
+		MatrixG *m;
+	};
 
+	///Enumeration to determine how @c Argument should be treated
+	enum class ArgumentType
+	{
+		int_,		///< Signed integer value, @i field of @c Argument
+		unsigned_,	///< Unsigned integer value, @i field of @c Argument
+		float_,		///< Floating point value, @i field of @c Argument
+		vector,		///< Vector value, @c v field of @c Argument
+		matrix		///< Vector value, @c m field of @c Argument
+	};
+
+	///Operation information
+	struct Operation
+	{
+		const char *name;					///< Operation name, used in debugging
+		const char *source;					///< Source code in GLSL. See mathg_implementation.h to learn how to write it
+		ArgumentType result_type;			///< Return type
+		unsigned int argument_number;		///< Argument number
+		const char ** argument_names;		///< Argument names
+		ArgumentType *argument_types;		///< Argument types
+		bool(*check)(Argument*, ObjectG*);	///< Check function
+	};
+
+private:
 	struct Object
 	{
 		static GLuint _vao1d;
@@ -143,63 +170,80 @@ private:
 		static GLuint _distribute1d;
 		static GLuint _distribute2d;
 	};
-
-	struct Program
+	
+	struct Index
 	{
-		struct AddVVV { static GLuint _program; static GLint _a; static GLint _b; };
-		struct SubtractVVV { static GLuint _program; static GLint _a; static GLint _b; };
-		struct MultiplyMVV { static GLuint _program; static GLint _a; static GLint _b; static GLint _awidth; };
+		static unsigned int _add_vvv;
+		static unsigned int _subtract_vvv;
+		static unsigned int _multiply_mvv;
 	};
 
-	struct Source
+	struct SubmittedOperation : Operation
 	{
-		static const char *_distribute1d;
-		static const char *_distribute2d;
-		static const char *_add_vvv;
-		static const char *_subtract_vvv;
-		static const char *_multiply_mvv;
+		GLuint *argument_locations;
+		GLuint program;
 	};
 
-	static bool _get_status(const char *name, bool link);
-	static bool _compile_distribute1d();
-	static bool _create_distribution1d();
-	static bool _compile_distribute2d();
-	static bool _create_distribution2d();
-
-	static bool _compile(GLuint *program, const char *source, const char *name, bool d2);
-	static bool _compile_add_vvv();
-	static bool _compile_subtract_vvv();
-	static bool _compile_multiply_mvv();
-
-	static void _bind_object(unsigned int count, ObjectG **matrixes, unsigned int *positions); friend VectorG; friend MatrixG;
-	static void _unbind_object(ObjectG *matrix); friend VectorG; friend MatrixG;
+	static bool _get_status(const char *name, bool link) noexcept;
+	static bool _compile_distribute1d() noexcept;
+	static bool _create_distribution1d() noexcept;
+	static bool _compile_distribute2d() noexcept;
+	static bool _create_distribution2d() noexcept;
+	static bool _submit_add_vvv() noexcept;
+	static bool _submit_subtract_vvv() noexcept;
+	static bool _submit_multiply_mvv() noexcept;
+	static void _bind_object(unsigned int count, ObjectG **matrixes, unsigned int *positions) noexcept; friend VectorG; friend MatrixG;
+	static void _unbind_object(ObjectG *matrix) noexcept; friend VectorG; friend MatrixG;
+	
+	#if defined(IR_MATHG_FREEGLUT)
+		static int _window;
+	#elif defined(IR_MATHG_SDL2)
+		static SDL_Window *_window;
+		static SDL_GLContext _context;
+	#else
+		static EGLDisplay _display;
+	#endif
+	static bool _ok;
+	static bool _print;
+	static bool *_permanent;
+	static GLuint *_temporary;
+	static unsigned int _npermanent;
+	static unsigned int _ntemporary;
+	static SubmittedOperation *_operations;
+	static unsigned int _noperations;
 
 public:
 	///Initializes MathG system
 	///@param print Print compilation and linking errors to @c stdout
-	static bool init(bool print);
-
+	static bool init(bool print) noexcept;
+	///Initializes custom operation
+	///@param operation Operation to submit
+	///@return Returns operation index on success or @c 0xFFFFFFFF on fail
+	static unsigned int submit(const Operation &operation) noexcept;
+	///Performs custom operation
+	///@param operation Operation index returned by @c submit
+	///@return @c true or @c false dependent on success or fail
+	static bool perform(unsigned int operation, Argument *args, ObjectG *r) noexcept;
 	///Performs add operation on vectors <tt>r = a + b</tt>
 	///@return @c true or @c false dependent on success or fail
-	static bool add_vvv(VectorG *a, VectorG *b, VectorG *r);
+	static bool add_vvv(VectorG *a, VectorG *b, VectorG *r) noexcept;
 	///Performs subtract operation <tt>r = a - b</tt>
 	///@return @c true or @c false dependent on success or fail
-	static bool subtract_vvv(VectorG *a, VectorG *b, VectorG *r);
+	static bool subtract_vvv(VectorG *a, VectorG *b, VectorG *r) noexcept;
 	///Performs multiply operation <tt>r = A * b</tt>
 	///@return @c true or @c false dependent on success or fail
-	static bool multiply_mvv(MatrixG *a, VectorG *b, VectorG *r);
+	static bool multiply_mvv(MatrixG *a, VectorG *b, VectorG *r) noexcept;
 	
 	///Finalizes MathG system
 	///@return @c true or @c false dependent on success or fail
-	static void free();
+	static void free() noexcept;
 };
 
 /**@mainpage Welcome to MathG!
-*# Welcome to MathG!
-*Ultra-light GPU-accelerated mathematics library. Developed mostly for [NeuroG](https://github.com/Meta-chan/NeuroG).
+*Ultra-light GPU-accelerated **extendable** mathematics library. Developed mostly for [NeuroG](https://github.com/Meta-chan/NeuroG).
 *
 *### Platforms
-*Currently Windows x86 only, but in perspective can be ported on every platform that provides OpenGL API. In nearest future I plan to port it on Linux x86.
+*Compiled and tested on Windows x86/x64, compiled on Linux x86. In perspective can be ported on every platform that provides OpenGL API.
 *
 *### Usage
 *The installation process is integrated with [Ironic Library](https://github.com/Meta-chan/ironic_library), follow the link for more. But in a nutshell, you can do just this:

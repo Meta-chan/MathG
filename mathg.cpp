@@ -26,7 +26,6 @@ void test()
 	std::default_random_engine generator;
 	std::uniform_real_distribution<float> distribution(-1.0f, 1.0f);
 	bool ok;
-	
 	ir::MatrixC<float, ALIGN> ac(SIZE, SIZE, &ok); if (!ok) return;
 	for (unsigned int i = 0; i < SIZE; i++)
 	{

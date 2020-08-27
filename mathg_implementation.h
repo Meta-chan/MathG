@@ -21,40 +21,53 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ir_resource/ir_shader_resource.h>
-#include "mathg_source.h"
+#include <ir_resource/ir_lambda_resource.h>
 #include "mathg_variables.h"
+#include "mathg_object.h"
 #include "mathg_vector.h"
 #include "mathg_matrix.h"
 
-bool MathG::_get_status(const char *name, bool link)
+bool MathG::_get_status(const char *name, bool link) noexcept
 {
 	GLchar infoLog[512];
 	GLint success;
 	glGetShaderiv(Shader::_distribute1d, link ? GL_LINK_STATUS : GL_COMPILE_STATUS, &success);
 	if (!success)
 	{
-		glGetShaderInfoLog(Shader::_distribute1d, 512, nullptr, infoLog);
-		printf("Error %s %s %s\n%s",
-			link ? "linking" : "compiling",
-			link ? "program" : "shader",
-			name, infoLog);
+		if (_print)
+		{
+			glGetShaderInfoLog(Shader::_distribute1d, 512, nullptr, infoLog);
+			printf("Error %s %s %s\n%s",
+				link ? "linking" : "compiling",
+				link ? "program" : "shader",
+				name, infoLog);
+		}
 		return false;
 	}
 	return true;
 };
 
-bool MathG::_compile_distribute1d()
+bool MathG::_compile_distribute1d() noexcept
 {
 	if (Shader::_distribute1d != GL_ERR) return true;
 	 Shader::_distribute1d = glCreateShader(GL_VERTEX_SHADER);
 	if (Shader::_distribute1d == GL_ERR) return false;
-	glShaderSource(Shader::_distribute1d, 1, &Source::_distribute1d, nullptr);
+	const char *source =
+	R"(
+		#version 330 core
+		layout(location = 0) in float position;
+		void main()
+		{
+			gl_Position = vec4(0.5f, position, 0.0f, 1.0f);
+		};
+	)";
+
+	glShaderSource(Shader::_distribute1d, 1, &source, nullptr);
 	glCompileShader(Shader::_distribute1d);
 	return _get_status("distribute1d", false);
 };
 
-bool MathG::_create_distribution1d()
+bool MathG::_create_distribution1d() noexcept
 {
 	if (Object::_vbo1d != GL_ERR) return true;
 	GLfloat d1[] = { -1.0f, 1.0f };
@@ -70,17 +83,27 @@ bool MathG::_create_distribution1d()
 	return true;
 };
 
-bool MathG::_compile_distribute2d()
+bool MathG::_compile_distribute2d() noexcept
 {
 	if (Shader::_distribute2d != GL_ERR) return true;
 	Shader::_distribute2d = glCreateShader(GL_VERTEX_SHADER);
 	if (Shader::_distribute2d == GL_ERR) return false;
-	glShaderSource(Shader::_distribute2d, 1, &Source::_distribute2d, nullptr);
+	const char *source = 
+	R"(
+		#version 330 core
+		layout(location = 0) in float vertical;
+		layout(location = 1) in float horizontal;
+		void main()
+		{
+			gl_Position = vec4(horizontal, vertical, 0.0f, 1.0f);
+		};
+	)";
+	glShaderSource(Shader::_distribute2d, 1, &source, nullptr);
 	glCompileShader(Shader::_distribute2d);
 	return _get_status("distribute2d", false);
 };
 
-bool MathG::_create_distribution2d()
+bool MathG::_create_distribution2d() noexcept
 {
 	if (Object::_vbo2d != GL_ERR) return true;
 	GLfloat d2[] = { 1.0f,	1.0f,
@@ -105,51 +128,7 @@ bool MathG::_create_distribution2d()
 	return true;
 };
 
-bool MathG::_compile(GLuint *program, const char *source, const char *name, bool d2)
-{
-	if (*program != GL_ERR) return true;
-	if (!_compile_distribute1d()) return false;
-	if (!_create_distribution1d()) return false;
-	ir::ShaderResource shader = glCreateShader(GL_FRAGMENT_SHADER);
-	if (shader == GL_ERR) return false;
-	glShaderSource(shader, 1, &source, nullptr);
-	glCompileShader(shader);
-	if (!_get_status(name, false)) return false;
-	*program = glCreateProgram();
-	if (*program == GL_ERR) return false;
-	glAttachShader(*program, Shader::_distribute1d);
-	glAttachShader(*program, shader);
-	glLinkProgram(*program);
-	if (!_get_status(name, true)) return false;
-	return true;
-};
-
-bool MathG::_compile_add_vvv()
-{
-	if (!_compile(&Program::AddVVV::_program, Source::_add_vvv, "add_vvv", false)) return false;
-	if((Program::AddVVV::_a = glGetUniformLocation(Program::AddVVV::_program, "a")) == -1
-	|| (Program::AddVVV::_b = glGetUniformLocation(Program::AddVVV::_program, "b")) == -1) return false;
-	return true;
-};
-
-bool MathG::_compile_subtract_vvv()
-{
-	if (!_compile(&Program::SubtractVVV::_program, Source::_subtract_vvv, "subtract_vvv", false)) return false;
-	if((Program::SubtractVVV::_a = glGetUniformLocation(Program::SubtractVVV::_program, "a")) == -1
-	|| (Program::SubtractVVV::_b = glGetUniformLocation(Program::SubtractVVV::_program, "b")) == -1) return false;
-	return true;
-};
-
-bool MathG::_compile_multiply_mvv()
-{
-	if (!_compile(&Program::MultiplyMVV::_program, Source::_multiply_mvv, "multiply_mvv", false)) return false;
-	if((Program::MultiplyMVV::_a = glGetUniformLocation(Program::MultiplyMVV::_program, "a")) == -1
-	|| (Program::MultiplyMVV::_b = glGetUniformLocation(Program::MultiplyMVV::_program, "b")) == -1
-	|| (Program::MultiplyMVV::_awidth = glGetUniformLocation(Program::MultiplyMVV::_program, "awidth")) == -1) return false;
-	return true;
-};
-
-void MathG::_bind_object(unsigned int count, ObjectG **objects, unsigned int *positions)
+void MathG::_bind_object(unsigned int count, ObjectG **objects, unsigned int *positions) noexcept
 {
 	for (unsigned int i = 0; i < count; i++) positions[i] = 0xFFFFFFFF;
 	bool temporary_used[4] = { false, false, false, false };
@@ -216,7 +195,7 @@ void MathG::_bind_object(unsigned int count, ObjectG **objects, unsigned int *po
 	}
 };
 
-void MathG::_unbind_object(ObjectG *object)
+void MathG::_unbind_object(ObjectG *object) noexcept
 {
 	if (object->_permanent != 0xFFFFFFFF)
 	{
@@ -235,7 +214,7 @@ void MathG::_unbind_object(ObjectG *object)
 	}
 };
 
-bool MathG::init(bool print)
+bool MathG::init(bool print) noexcept
 {
 #if defined(IR_MATHG_FREEGLUT)
 	//Making argv
@@ -338,89 +317,251 @@ bool MathG::init(bool print)
 	return true;
 };
 
-bool MathG::add_vvv(VectorG *a, VectorG *b, VectorG *r)
+unsigned int MathG::submit(const Operation &operation) noexcept
 {
-	if (!_ok) return false;
-	if (!a->_ok || !b->_ok || !r->_ok) return false;
-	if (a == b || a == r || b == r) return false;
-	if (a->_height != b->_height || a->_height != r->_height) return false;
-	if (!_compile_add_vvv()) return false;
-	glUseProgram(Program::AddVVV::_program);
-	glBindVertexArray(MathG::Object::_vao1d);
-	ObjectG *objects[2] = { a, b };
-	unsigned int positions[2];
-	_bind_object(2, objects, positions);
-	glUniform1i(Program::AddVVV::_a, positions[0]);
-	glUniform1i(Program::AddVVV::_b, positions[1]);
+	//Compile vertex shader
+	if (operation.result_type == ArgumentType::vector)
+	{
+		if (!_compile_distribute1d()) return 0xFFFFFFFF;
+	}
+	else if (operation.result_type == ArgumentType::matrix)
+	{
+		if (!_compile_distribute2d()) return 0xFFFFFFFF;
+	}
+	else return 0xFFFFFFFF;
+	
+	//Compiling fragment shader
+	ir::LambdaResource<GLuint> shader([](GLuint* s)
+	{
+		if (*s != GL_ERR)
+		{
+			glDeleteShader(*s);
+			*s = GL_ERR;
+		}
+	});
+	shader = glCreateShader(GL_FRAGMENT_SHADER);
+	if (shader == GL_ERR) return false;
+	glShaderSource(shader, 1, &operation.source, nullptr);
+	glCompileShader(shader);
+	if (!_get_status(operation.name, false)) return false;
+	
+	//Linking program
+	ir::LambdaResource<GLuint> program([](GLuint* p)
+	{
+		if (*p != GL_ERR)
+		{
+			glDeleteProgram(*p);
+			*p = GL_ERR;
+		}
+	});
+	program = glCreateProgram();
+	if (program == GL_ERR) return false;
+	glAttachShader(program, Shader::_distribute1d);
+	glAttachShader(program, shader);
+	glLinkProgram(program);
+	if (!_get_status(operation.name, true)) return false;
+
+	//Finding uniforms
+	for (unsigned int i = 0; i < operation.argument_number; i++)
+	{
+		if (glGetUniformLocation(program, operation.argument_names[i]) == GL_ERR)
+			return 0xFFFFFFFF;
+	}
+
+	//Creating operation
+	if (_operations == nullptr) _operations = (SubmittedOperation*)malloc(sizeof(SubmittedOperation));
+	else _operations = (SubmittedOperation*)realloc(_operations, (_noperations + 1) * sizeof(SubmittedOperation));
+	if (_operations == nullptr) return 0xFFFFFFFF;
+	_noperations++;
+	SubmittedOperation *so = &_operations[_noperations - 1];
+	*((Operation*)so) = operation;
+	if(((so->argument_names = (const char**)malloc(operation.argument_number * sizeof(char*))) == nullptr)
+	|| ((so->argument_types = (ArgumentType*)malloc(operation.argument_number * sizeof(ArgumentType))) == nullptr)
+	|| ((so->argument_locations = (GLuint*)malloc(operation.argument_number * sizeof(GLuint))) == nullptr)) return 0xFFFFFFFF;
+	memcpy(so->argument_names, operation.argument_names, operation.argument_number * sizeof(char*));
+	memcpy(so->argument_types, operation.argument_types, operation.argument_number * sizeof(ArgumentType));
+	for (unsigned int i = 0; i < operation.argument_number; i++)
+		so->argument_locations[i] = glGetUniformLocation(program, operation.argument_names[i]);
+	so->program = program;
+	
+	program = GL_ERR;
+	return _noperations - 1;
+};
+
+bool MathG::perform(unsigned int operation, Argument *args, ObjectG *r) noexcept
+{
+	if (operation > _noperations) return false;
+	SubmittedOperation *op = &_operations[operation];
+	if (op->result_type == ArgumentType::vector) _compile_distribute1d();
+	else _compile_distribute2d;
+
+	ObjectG *objects[3];
+	unsigned int positions[3];
+	unsigned int nobjects = 0;
+	for (unsigned int i = 0; i < op->argument_number; i++)
+	{
+		ArgumentType typ = op->argument_types[i];
+		if (typ == ArgumentType::vector || typ == ArgumentType::matrix)
+		{
+			if (!args[i].o->ok() || (typ != ArgumentType::matrix ^ args[i].o->matrix())) return false;
+			objects[nobjects++] = args[i].v;
+		}
+	}
+	glUseProgram(_operations[operation].program);
+	glBindVertexArray(op->result_type == ArgumentType::vector ? Object::_vao1d : Object::_vao2d);
+	_bind_object(nobjects, objects, positions);
+	nobjects = 0;
+	for (unsigned int i = 0; i < op->argument_number; i++)
+	{
+		ArgumentType typ = op->argument_types[i];
+		if (typ == ArgumentType::float_) glUniform1f(op->argument_locations[i], args[i].f);
+		else if (typ == ArgumentType::int_) glUniform1i(op->argument_locations[i], args[i].i);
+		else if (typ == ArgumentType::unsigned_) glUniform1i(op->argument_locations[i], args[i].u);
+		else glUniform1i(op->argument_locations[i], positions[nobjects++]);
+	}
 	if (r->_framebuffer == GL_ERR)
 	{
 		glGenFramebuffers(1, &r->_framebuffer);
 		if (r->_framebuffer == GL_ERR) return false;
 	}
-	glBindFramebuffer(GL_FRAMEBUFFER, r->_framebuffer);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, r->_texture, 0);
-	glViewport(0, 0, 1, r->_height);
-	glDrawArrays(GL_LINES, 0, 2);
-	glFinish();
-	return false;
+	if (op->result_type == ArgumentType::vector)
+	{
+		glViewport(0, 0, 1, ((VectorG*)r)->height());
+		glDrawArrays(GL_LINES, 0, 2);
+	}
+	else
+	{
+		glViewport(0, 0, ((MatrixG*)r)->width(), ((MatrixG*)r)->width());
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+	}
+	glFlush();
 };
 
-bool MathG::subtract_vvv(VectorG *a, VectorG *b, VectorG *r)
+bool MathG::add_vvv(VectorG *a, VectorG *b, VectorG *r) noexcept
 {
 	if (!_ok) return false;
-	if (!a->_ok || !b->_ok || !r->_ok) return false;
-	if (a == b || a == r || b == r) return false;
-	if (a->_height != b->_height || a->_height != r->_height) return false;
-	if (!_compile_subtract_vvv()) return false;
-	glUseProgram(Program::SubtractVVV::_program);
-	glBindVertexArray(MathG::Object::_vao1d);
-	ObjectG *objects[2] = { a, b };
-	unsigned int positions[2];
-	_bind_object(2, objects, positions);
-	glUniform1i(Program::SubtractVVV::_a, positions[0]);
-	glUniform1i(Program::SubtractVVV::_b, positions[1]);
-	if (r->_framebuffer == GL_ERR)
+	if (Index::_add_vvv == 0xFFFFFFFE)
 	{
-		glGenFramebuffers(1, &r->_framebuffer);
-		if (r->_framebuffer == GL_ERR) return false;
+		const char *names[2] = { "a", "b" };
+		ArgumentType types[2] = { ArgumentType::vector, ArgumentType::vector };
+		Operation op;
+		op.argument_number = 2;
+		op.argument_names = names;
+		op.argument_types = types;
+		op.result_type = ArgumentType::vector;
+		op.check = [](Argument* arguments, ObjectG *result) -> bool
+		{
+			return(arguments[0].v->height() == arguments[1].v->height()
+				&& arguments[0].v->height() == ((VectorG*)result)->height());
+		};
+		op.source =
+		R"(
+			#version 330 core
+			uniform sampler2D a;
+			uniform sampler2D b;
+			out float c;
+			void main()
+			{
+				int position = int(gl_FragCoord.y - 0.5);
+				c = texelFetch(a, ivec2(0, position), 0).r + texelFetch(b, ivec2(0, position), 0).r;
+			};
+		)";
+		Index::_add_vvv = submit(op);
 	}
-	glBindFramebuffer(GL_FRAMEBUFFER, r->_framebuffer);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, r->_texture, 0);
-	glViewport(0, 0, 1, r->_height);
-	glDrawArrays(GL_LINES, 0, 2);
-	glFinish();
-	return false;
+	if (Index::_add_vvv == 0xFFFFFFFF) return false;
+	Argument arguments[2];
+	arguments[0].v = a;
+	arguments[1].v = b;
+	return perform(Index::_add_vvv, arguments, r);
 };
 
-bool MathG::multiply_mvv(MatrixG *a, VectorG *b, VectorG *r)
+bool MathG::subtract_vvv(VectorG *a, VectorG *b, VectorG *r) noexcept
 {
 	if (!_ok) return false;
-	if (!a->_ok || !b->_ok || !r->_ok) return false;
-	if (b == r) return false;
-	if (a->_width != b->_height || a->_height != r->_height) return false;
-	if (!_compile_multiply_mvv()) return false;
-	glUseProgram(Program::MultiplyMVV::_program);
-	glBindVertexArray(MathG::Object::_vao1d);
-	ObjectG *objects[2] = { a, b };
-	unsigned int positions[2];
-	_bind_object(2, objects, positions);
-	glUniform1i(Program::MultiplyMVV::_a, positions[0]);
-	glUniform1i(Program::MultiplyMVV::_b, positions[1]);
-	glUniform1i(Program::MultiplyMVV::_awidth, a->_width);
-	if (r->_framebuffer == GL_ERR)
+	if (Index::_subtract_vvv == 0xFFFFFFFE)
 	{
-		glGenFramebuffers(1, &r->_framebuffer);
-		if (r->_framebuffer == GL_ERR) return false;
+		const char *names[2] = { "a", "b" };
+		ArgumentType types[2] = { ArgumentType::vector, ArgumentType::vector };
+		Operation op;
+		op.argument_number = 2;
+		op.argument_names = names;
+		op.argument_types = types;
+		op.result_type = ArgumentType::vector;
+		op.check = [](Argument* arguments, ObjectG *result) -> bool
+		{
+			return(arguments[0].v->height() == arguments[1].v->height()
+				&& arguments[0].v->height() == ((VectorG*)result)->height());
+		};
+		op.source =
+		R"(
+			#version 330 core
+			uniform sampler2D a;
+			uniform sampler2D b;
+			out float c;
+			void main()
+			{
+				int position = int(gl_FragCoord.y - 0.5);
+				c = texelFetch(a, ivec2(0, position), 0).r - texelFetch(b, ivec2(0, position), 0).r;
+			};
+		)";
+		Index::_subtract_vvv = submit(op);
 	}
-	glBindFramebuffer(GL_FRAMEBUFFER, r->_framebuffer);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, r->_texture, 0);
-	glViewport(0, 0, 1, r->_height);
-	glDrawArrays(GL_LINES, 0, 2);
-	glFinish();
-	return false;
+	if (Index::_subtract_vvv == 0xFFFFFFFF) return false;
+	Argument arguments[2];
+	arguments[0].v = a;
+	arguments[1].v = b;
+	return perform(Index::_subtract_vvv, arguments, r);
 };
 
-void MathG::free()
+bool MathG::multiply_mvv(MatrixG *a, VectorG *b, VectorG *r) noexcept
+{
+	if (!_ok) return false;
+	if (Index::_multiply_mvv == 0xFFFFFFFE)
+	{
+		const char *names[3] = { "a", "b", "awidth" };
+		ArgumentType types[3] = { ArgumentType::vector, ArgumentType::vector, ArgumentType::int_ };
+		Operation op;
+		op.argument_number = 3;
+		op.argument_names = names;
+		op.argument_types = types;
+		op.result_type = ArgumentType::vector;
+		op.check = [](Argument* arguments, ObjectG *result) -> bool
+		{
+			return(arguments[0].v->height() == arguments[1].v->height()
+				&& arguments[0].v->height() == ((VectorG*)result)->height());
+		};
+		op.source =
+		R"(
+			#version 330 core
+
+			uniform sampler2D a;
+			uniform sampler2D b;
+			uniform int awidth;
+
+			out float c;
+
+			void main()
+			{
+				int position = int(gl_FragCoord.y - 0.5);
+				float sum = 0.0;
+				for (int i = 0; i < awidth; i++)
+				{
+					sum += texelFetch(a, ivec2(i, position), 0).r * texelFetch(b, ivec2(0, position), 0).r;
+				}
+				c = sum;
+			};
+		)";
+		Index::_multiply_mvv = submit(op);
+	}
+	if (Index::_multiply_mvv == 0xFFFFFFFF) return false;
+	Argument arguments[2];
+	arguments[0].m = a;
+	arguments[1].v = b;
+	return perform(Index::_multiply_mvv, arguments, r);
+};
+
+void MathG::free() noexcept
 {
 	if (Object::_vbo1d != GL_ERR) glDeleteBuffers(1, &Object::_vbo1d);
 	if (Object::_vao1d != GL_ERR) glDeleteVertexArrays(1, &Object::_vao1d);
@@ -428,9 +569,14 @@ void MathG::free()
 	if (Object::_vao2d != GL_ERR) glDeleteVertexArrays(1, &Object::_vao2d);
 	if (Shader::_distribute1d != GL_ERR) glDeleteShader(Shader::_distribute1d);
 	if (Shader::_distribute2d != GL_ERR) glDeleteShader(Shader::_distribute2d);
-	if (Program::AddVVV::_program != GL_ERR) glDeleteProgram(Program::AddVVV::_program);
-	if (Program::SubtractVVV::_program != GL_ERR) glDeleteProgram(Program::SubtractVVV::_program);
-	if (Program::MultiplyMVV::_program != GL_ERR) glDeleteProgram(Program::MultiplyMVV::_program);
+	for (unsigned int i = 0; i < _noperations; i++)
+	{
+		::free(_operations[i].argument_names);
+		::free(_operations[i].argument_types);
+		::free(_operations[i].argument_locations);
+		glDeleteProgram(_operations[i].program);
+	}
+	
 	#if defined(IR_MATHG_FREEGLUT)
 		if (_window) glutDestroyWindow(_window);
 	#elif defined(IR_MATHG_SDL2)
