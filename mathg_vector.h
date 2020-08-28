@@ -13,8 +13,9 @@
 
 VectorG::VectorG(unsigned int height, bool *ok)
 {
+	_matrix = false;
 	glGenTextures(1, &_texture);
-	if (_texture != GL_ERR)
+	if (_texture != MG_ERROR)
 	{
 		ObjectG *object = this;
 		unsigned int position;
@@ -61,12 +62,12 @@ bool VectorG::store(const float *data)
 
 VectorG::~VectorG()
 {
-	if (_texture != GL_ERR)
+	if (_texture != MG_ERROR)
 	{
 		MathG::_unbind_object(this);
 		glDeleteTextures(1, &_texture);
 	}
-	if (_framebuffer != GL_ERR) glDeleteFramebuffers(1, &_framebuffer);
+	if (_framebuffer != MG_ERROR) glDeleteFramebuffers(1, &_framebuffer);
 	_ok = false;
 };
 

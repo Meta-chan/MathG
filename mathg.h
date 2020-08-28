@@ -26,7 +26,12 @@
 	#include <EGL/egl.h>
 #endif
 
-#define GL_ERR ((GLuint)-1)
+#define MG_ERROR ((GLuint)-1)
+#define MG_UNINITED ((GLuint)-2)
+#define MG_ERROR_INDEX ((unsigned int)-1)
+#define MG_UNINITED_INDEX ((unsigned int)-2)
+#define MG_NOT_PERMANENT ((unsigned int)-1)
+#define MG_INVALID_POSITION ((unsigned int)-1)
 
 class MathG;
 
@@ -36,9 +41,9 @@ class MathG;
 		friend MathG;
 		
 	protected:
-		unsigned int _permanent = 0xFFFFFFFF;
-		GLuint _texture			= GL_ERR;
-		GLuint _framebuffer		= GL_ERR;
+		unsigned int _permanent = MG_NOT_PERMANENT;
+		GLuint _texture			= MG_ERROR;
+		GLuint _framebuffer		= MG_ERROR;
 		bool _ok				= false;
 		bool _matrix			= false;
 
@@ -178,20 +183,26 @@ private:
 		static unsigned int _multiply_mvv;
 	};
 
-	struct SubmittedOperation : Operation
+	struct SubmittedOperation
 	{
+		char *name;
+		char *source;
+		ArgumentType result_type;
+		unsigned int argument_number;
+		char ** argument_names;
+		ArgumentType *argument_types;
 		GLuint *argument_locations;
+		bool(*check)(Argument*, ObjectG*);
 		GLuint program;
 	};
 
-	static bool _get_status(const char *name, bool link) noexcept;
+	static char *_strdup(const char *s) noexcept;
+	static bool _get_compile_status(GLuint shader, const char *name) noexcept;
+	static bool _get_link_status(GLuint program, const char *name) noexcept;
 	static bool _compile_distribute1d() noexcept;
 	static bool _create_distribution1d() noexcept;
 	static bool _compile_distribute2d() noexcept;
 	static bool _create_distribution2d() noexcept;
-	static bool _submit_add_vvv() noexcept;
-	static bool _submit_subtract_vvv() noexcept;
-	static bool _submit_multiply_mvv() noexcept;
 	static void _bind_object(unsigned int count, ObjectG **matrixes, unsigned int *positions) noexcept; friend VectorG; friend MatrixG;
 	static void _unbind_object(ObjectG *matrix) noexcept; friend VectorG; friend MatrixG;
 	

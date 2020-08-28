@@ -26,21 +26,46 @@
 #include "mathg_object.h"
 #include "mathg_vector.h"
 #include "mathg_matrix.h"
+#include "mathg_basic.h"
 
-bool MathG::_get_status(const char *name, bool link) noexcept
+char *MathG::_strdup(const char *s) noexcept
+{
+	unsigned int len = strlen(s);
+	char *d = (char*)malloc(len + 1);
+	if (d != nullptr) memcpy(d, s, len + 1);
+	return d;
+};
+
+bool MathG::_get_compile_status(GLuint shader, const char *name) noexcept
 {
 	GLchar infoLog[512];
 	GLint success;
-	glGetShaderiv(Shader::_distribute1d, link ? GL_LINK_STATUS : GL_COMPILE_STATUS, &success);
+	glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
 	if (!success)
 	{
 		if (_print)
 		{
-			glGetShaderInfoLog(Shader::_distribute1d, 512, nullptr, infoLog);
-			printf("Error %s %s %s\n%s",
-				link ? "linking" : "compiling",
-				link ? "program" : "shader",
-				name, infoLog);
+			glGetShaderInfoLog(shader, 512, nullptr, infoLog);
+			printf("Error compiling shader %s\n%s",
+				name != nullptr ? name : "?", infoLog);
+		}
+		return false;
+	}
+	return true;
+};
+
+bool MathG::_get_link_status(GLuint program, const char *name) noexcept
+{
+	GLchar infoLog[512];
+	GLint success;
+	glGetProgramiv(program, GL_LINK_STATUS, &success);
+	if (!success)
+	{
+		if (_print)
+		{
+			glGetShaderInfoLog(program, 512, nullptr, infoLog);
+			printf("Error linking program %s\n%s",
+				name != nullptr ? name : "?", infoLog);
 		}
 		return false;
 	}
@@ -49,9 +74,11 @@ bool MathG::_get_status(const char *name, bool link) noexcept
 
 bool MathG::_compile_distribute1d() noexcept
 {
-	if (Shader::_distribute1d != GL_ERR) return true;
-	 Shader::_distribute1d = glCreateShader(GL_VERTEX_SHADER);
-	if (Shader::_distribute1d == GL_ERR) return false;
+	if (Shader::_distribute1d == MG_ERROR) return false;
+	if (Shader::_distribute1d != MG_UNINITED) return true;
+	
+	Shader::_distribute1d = glCreateShader(GL_VERTEX_SHADER);
+	if (Shader::_distribute1d == MG_ERROR) return false;
 	const char *source =
 	R"(
 		#version 330 core
@@ -64,18 +91,21 @@ bool MathG::_compile_distribute1d() noexcept
 
 	glShaderSource(Shader::_distribute1d, 1, &source, nullptr);
 	glCompileShader(Shader::_distribute1d);
-	return _get_status("distribute1d", false);
+	if (_get_compile_status(Shader::_distribute1d, "distribute1d")) return true;
+	else { glDeleteShader(Shader::_distribute1d); Shader::_distribute1d = MG_ERROR; return false; }
 };
 
 bool MathG::_create_distribution1d() noexcept
 {
-	if (Object::_vbo1d != GL_ERR) return true;
+	if (Object::_vbo1d == MG_ERROR) return false;
+	if (Object::_vbo1d != MG_UNINITED) return true;
+
 	GLfloat d1[] = { -1.0f, 1.0f };
 	glGenVertexArrays(1, &Object::_vao1d);
-	if (Object::_vao1d == GL_ERR) return false;
+	if (Object::_vao1d == MG_ERROR) { Object::_vbo1d = MG_ERROR; return false; };
 	glBindVertexArray(Object::_vao1d);
 	glGenBuffers(1, &Object::_vbo1d);
-	if (Object::_vbo1d == GL_ERR) return false;
+	if (Object::_vbo1d == MG_ERROR) return false;
 	glBindBuffer(GL_ARRAY_BUFFER, Object::_vbo1d);
 	glBufferData(GL_ARRAY_BUFFER, 2 * sizeof(GLfloat), d1, GL_STATIC_DRAW);
 	glVertexAttribPointer(0, 1, GL_FLOAT, GL_FALSE, sizeof(GLfloat), (GLvoid*)0);
@@ -85,11 +115,13 @@ bool MathG::_create_distribution1d() noexcept
 
 bool MathG::_compile_distribute2d() noexcept
 {
-	if (Shader::_distribute2d != GL_ERR) return true;
+	if (Shader::_distribute2d == MG_ERROR) return false;
+	if (Shader::_distribute2d != MG_UNINITED) return true;
+
 	Shader::_distribute2d = glCreateShader(GL_VERTEX_SHADER);
-	if (Shader::_distribute2d == GL_ERR) return false;
-	const char *source = 
-	R"(
+	if (Shader::_distribute2d == MG_ERROR) return false;
+	const char *source =
+		R"(
 		#version 330 core
 		layout(location = 0) in float vertical;
 		layout(location = 1) in float horizontal;
@@ -98,14 +130,18 @@ bool MathG::_compile_distribute2d() noexcept
 			gl_Position = vec4(horizontal, vertical, 0.0f, 1.0f);
 		};
 	)";
+
 	glShaderSource(Shader::_distribute2d, 1, &source, nullptr);
 	glCompileShader(Shader::_distribute2d);
-	return _get_status("distribute2d", false);
+	if (_get_compile_status(Shader::_distribute2d, "distribute2d")) return true;
+	else { glDeleteShader(Shader::_distribute2d); Shader::_distribute2d = MG_ERROR; return false; }
 };
 
 bool MathG::_create_distribution2d() noexcept
 {
-	if (Object::_vbo2d != GL_ERR) return true;
+	if (Object::_vbo2d == MG_ERROR) return false;
+	if (Object::_vbo2d != MG_UNINITED) return true; 
+	
 	GLfloat d2[] = { 1.0f,	1.0f,
 					-1.0f,	1.0f,
 					-1.0f,	-1.0f,
@@ -115,10 +151,10 @@ bool MathG::_create_distribution2d() noexcept
 					1.0f,	1.0f,
 	};
 	glGenVertexArrays(1, &Object::_vao2d);
-	if (Object::_vao2d == GL_ERR) return false;
+	if (Object::_vao2d == MG_ERROR) { Object::_vbo2d = MG_ERROR; return false; }
 	glBindVertexArray(Object::_vao2d);
 	glGenBuffers(1, &Object::_vbo2d);
-	if (Object::_vbo2d == GL_ERR) return false;
+	if (Object::_vbo2d == MG_ERROR) return false;
 	glBindBuffer(GL_ARRAY_BUFFER, Object::_vbo2d);
 	glBufferData(GL_ARRAY_BUFFER, 12 * sizeof(GLfloat), d2, GL_STATIC_DRAW);
 	glVertexAttribPointer(0, 1, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), (GLvoid*)0);
@@ -130,14 +166,14 @@ bool MathG::_create_distribution2d() noexcept
 
 void MathG::_bind_object(unsigned int count, ObjectG **objects, unsigned int *positions) noexcept
 {
-	for (unsigned int i = 0; i < count; i++) positions[i] = 0xFFFFFFFF;
+	for (unsigned int i = 0; i < count; i++) positions[i] = MG_INVALID_POSITION;
 	bool temporary_used[4] = { false, false, false, false };
 
 	//Finding already binded textures
 	for (unsigned int i = 0; i < count; i++)
 	{
 		//Find permanent textures
-		if (objects[i]->_permanent != 0xFFFFFFFF)
+		if (objects[i]->_permanent != MG_INVALID_POSITION)
 		{
 			positions[i] = objects[i]->_permanent;
 		}
@@ -160,7 +196,7 @@ void MathG::_bind_object(unsigned int count, ObjectG **objects, unsigned int *po
 	for (unsigned int i = 0; i < count; i++)
 	{
 		//Try to find place in permanent textures
-		if (positions[i] == 0xFFFFFFFF)
+		if (positions[i] == MG_INVALID_POSITION)
 		{
 			for (unsigned int j = 0; j < _npermanent; j++)
 			{
@@ -177,7 +213,7 @@ void MathG::_bind_object(unsigned int count, ObjectG **objects, unsigned int *po
 		}
 
 		//Find place in temporary storage
-		if (positions[i] == 0xFFFFFFFF)
+		if (positions[i] == MG_INVALID_POSITION)
 		{
 			for (unsigned int j = 0; j < _ntemporary; j++)
 			{
@@ -197,7 +233,7 @@ void MathG::_bind_object(unsigned int count, ObjectG **objects, unsigned int *po
 
 void MathG::_unbind_object(ObjectG *object) noexcept
 {
-	if (object->_permanent != 0xFFFFFFFF)
+	if (object->_permanent != MG_NOT_PERMANENT)
 	{
 		_permanent[object->_permanent] = false;
 	}
@@ -207,7 +243,7 @@ void MathG::_unbind_object(ObjectG *object) noexcept
 		{
 			if (object->_texture == _temporary[i])
 			{
-				_temporary[i] = GL_ERR;
+				_temporary[i] = MG_ERROR;
 				return;
 			}
 		}
@@ -307,12 +343,13 @@ bool MathG::init(bool print) noexcept
 	_ntemporary = 3;
 	_temporary = (GLuint*)malloc(_ntemporary * sizeof(GLuint));
 	if (_temporary == nullptr) return false;
-	for (unsigned int i = 0; i < _ntemporary; i++) _temporary[i] = GL_ERR;
+	for (unsigned int i = 0; i < _ntemporary; i++) _temporary[i] = MG_ERROR;
 	_npermanent = ntextures - 3;
 	_permanent = (bool*)malloc(_npermanent * sizeof(bool));
 	if (_permanent == nullptr) return false;
 	for (unsigned int i = 0; i < _npermanent; i++) _permanent[i] = false;
 
+	_print = print;
 	_ok = true;
 	return true;
 };
@@ -322,109 +359,162 @@ unsigned int MathG::submit(const Operation &operation) noexcept
 	//Compile vertex shader
 	if (operation.result_type == ArgumentType::vector)
 	{
-		if (!_compile_distribute1d()) return 0xFFFFFFFF;
+		if (!_compile_distribute1d()) return MG_ERROR_INDEX;
 	}
 	else if (operation.result_type == ArgumentType::matrix)
 	{
-		if (!_compile_distribute2d()) return 0xFFFFFFFF;
+		if (!_compile_distribute2d()) return MG_ERROR_INDEX;
 	}
-	else return 0xFFFFFFFF;
+	else return MG_ERROR_INDEX;
 	
 	//Compiling fragment shader
 	ir::LambdaResource<GLuint> shader([](GLuint* s)
 	{
-		if (*s != GL_ERR)
+		if (*s != MG_ERROR)
 		{
 			glDeleteShader(*s);
-			*s = GL_ERR;
+			*s = MG_ERROR;
 		}
 	});
 	shader = glCreateShader(GL_FRAGMENT_SHADER);
-	if (shader == GL_ERR) return false;
+	if (shader == MG_ERROR) return false;
 	glShaderSource(shader, 1, &operation.source, nullptr);
 	glCompileShader(shader);
-	if (!_get_status(operation.name, false)) return false;
+	if (!_get_compile_status(shader, operation.name)) return false;
 	
 	//Linking program
 	ir::LambdaResource<GLuint> program([](GLuint* p)
 	{
-		if (*p != GL_ERR)
+		if (*p != MG_ERROR)
 		{
 			glDeleteProgram(*p);
-			*p = GL_ERR;
+			*p = MG_ERROR;
 		}
 	});
 	program = glCreateProgram();
-	if (program == GL_ERR) return false;
+	if (program == MG_ERROR) return false;
 	glAttachShader(program, Shader::_distribute1d);
 	glAttachShader(program, shader);
 	glLinkProgram(program);
-	if (!_get_status(operation.name, true)) return false;
+	if (!_get_link_status(program, operation.name)) return false;
 
-	//Finding uniforms
+	//Checking uniforms
 	for (unsigned int i = 0; i < operation.argument_number; i++)
 	{
-		if (glGetUniformLocation(program, operation.argument_names[i]) == GL_ERR)
-			return 0xFFFFFFFF;
+		if (glGetUniformLocation(program, operation.argument_names[i]) == MG_ERROR)
+			return MG_ERROR_INDEX;
 	}
 
 	//Creating operation
 	if (_operations == nullptr) _operations = (SubmittedOperation*)malloc(sizeof(SubmittedOperation));
 	else _operations = (SubmittedOperation*)realloc(_operations, (_noperations + 1) * sizeof(SubmittedOperation));
-	if (_operations == nullptr) return 0xFFFFFFFF;
+	if (_operations == nullptr) return MG_ERROR_INDEX;
 	_noperations++;
 	SubmittedOperation *so = &_operations[_noperations - 1];
-	*((Operation*)so) = operation;
-	if(((so->argument_names = (const char**)malloc(operation.argument_number * sizeof(char*))) == nullptr)
-	|| ((so->argument_types = (ArgumentType*)malloc(operation.argument_number * sizeof(ArgumentType))) == nullptr)
-	|| ((so->argument_locations = (GLuint*)malloc(operation.argument_number * sizeof(GLuint))) == nullptr)) return 0xFFFFFFFF;
-	memcpy(so->argument_names, operation.argument_names, operation.argument_number * sizeof(char*));
+	//name
+	so->name = operation.name != nullptr ? _strdup(operation.name) : nullptr;
+	//source
+	so->source = _strdup(operation.source);
+	if (so->source == nullptr) return MG_ERROR_INDEX;
+	//result_type
+	so->result_type = operation.result_type;
+	//argument_number
+	so->argument_number = operation.argument_number;
+	//argument_names
+	so->argument_names = (char**)malloc(operation.argument_number * sizeof(char*));
+	if (so->argument_names == nullptr) return MG_ERROR_INDEX;
+	memset(so->argument_names, 0, operation.argument_number * sizeof(char*));
+	for (unsigned int i = 0; i < operation.argument_number; i++)
+	{
+		so->argument_names[i] = _strdup(operation.argument_names[i]);
+		if (so->argument_names[i] == nullptr) return MG_ERROR_INDEX;
+	}
+	//argument_types
+	so->argument_types = (ArgumentType*)malloc(operation.argument_number * sizeof(ArgumentType));
+	if (so->argument_types == nullptr) return MG_ERROR_INDEX;
 	memcpy(so->argument_types, operation.argument_types, operation.argument_number * sizeof(ArgumentType));
+	//argument_locations
+	so->argument_locations = (GLuint*)malloc(operation.argument_number * sizeof(GLuint));
 	for (unsigned int i = 0; i < operation.argument_number; i++)
 		so->argument_locations[i] = glGetUniformLocation(program, operation.argument_names[i]);
+	//check
+	so->check = operation.check;
+	//program
 	so->program = program;
-	
-	program = GL_ERR;
+	program = MG_ERROR;
+
 	return _noperations - 1;
 };
 
 bool MathG::perform(unsigned int operation, Argument *args, ObjectG *r) noexcept
 {
-	if (operation > _noperations) return false;
+	//Checking operation
+	if (operation >= _noperations) return false;
 	SubmittedOperation *op = &_operations[operation];
-	if (op->result_type == ArgumentType::vector) _compile_distribute1d();
-	else _compile_distribute2d;
 
+	//Finding all object arguments, checking their type and if thay are ok
 	ObjectG *objects[3];
 	unsigned int positions[3];
 	unsigned int nobjects = 0;
 	for (unsigned int i = 0; i < op->argument_number; i++)
 	{
 		ArgumentType typ = op->argument_types[i];
-		if (typ == ArgumentType::vector || typ == ArgumentType::matrix)
+		if (typ == ArgumentType::vector)
 		{
-			if (!args[i].o->ok() || (typ != ArgumentType::matrix ^ args[i].o->matrix())) return false;
-			objects[nobjects++] = args[i].v;
+			if (!args[i].o->ok() || args[i].o->matrix()) return false;
+			objects[nobjects++] = args[i].o;
+		}
+		else if (typ == ArgumentType::matrix)
+		{
+			if (!args[i].o->ok() || !args[i].o->matrix()) return false;
+			objects[nobjects++] = args[i].o;
 		}
 	}
+
+	//Compiling distributions, checking result type and if it is ok
+	if (!r->ok()) return false;
+	if (op->result_type == ArgumentType::vector)
+	{
+		if (!_create_distribution1d() || !_compile_distribute1d() || r->matrix()) return false;
+	}
+	else
+	{
+		if (!_create_distribution1d() || !_compile_distribute2d() || !r->matrix()) return false;
+	}
+
+	//User check
+	if (op->check != nullptr)
+	{
+		if (!op->check(args, r)) return false;
+	}
+	
+	//Using program
 	glUseProgram(_operations[operation].program);
 	glBindVertexArray(op->result_type == ArgumentType::vector ? Object::_vao1d : Object::_vao2d);
+
+	//Binding objects
 	_bind_object(nobjects, objects, positions);
+
+	//Setting uniforms
 	nobjects = 0;
 	for (unsigned int i = 0; i < op->argument_number; i++)
 	{
 		ArgumentType typ = op->argument_types[i];
 		if (typ == ArgumentType::float_) glUniform1f(op->argument_locations[i], args[i].f);
 		else if (typ == ArgumentType::int_) glUniform1i(op->argument_locations[i], args[i].i);
-		else if (typ == ArgumentType::unsigned_) glUniform1i(op->argument_locations[i], args[i].u);
+		else if (typ == ArgumentType::unsigned_) glUniform1ui(op->argument_locations[i], args[i].u);
 		else glUniform1i(op->argument_locations[i], positions[nobjects++]);
 	}
-	if (r->_framebuffer == GL_ERR)
+
+	//Creating framebuffer
+	if (r->_framebuffer == MG_ERROR)
 	{
 		glGenFramebuffers(1, &r->_framebuffer);
-		if (r->_framebuffer == GL_ERR) return false;
+		if (r->_framebuffer == MG_ERROR) return false;
 	}
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, r->_texture, 0);
+
+	//Setting view and executing
 	if (op->result_type == ArgumentType::vector)
 	{
 		glViewport(0, 0, 1, ((VectorG*)r)->height());
@@ -435,145 +525,33 @@ bool MathG::perform(unsigned int operation, Argument *args, ObjectG *r) noexcept
 		glViewport(0, 0, ((MatrixG*)r)->width(), ((MatrixG*)r)->width());
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 	}
+
+	//Flushing
 	glFlush();
-};
 
-bool MathG::add_vvv(VectorG *a, VectorG *b, VectorG *r) noexcept
-{
-	if (!_ok) return false;
-	if (Index::_add_vvv == 0xFFFFFFFE)
-	{
-		const char *names[2] = { "a", "b" };
-		ArgumentType types[2] = { ArgumentType::vector, ArgumentType::vector };
-		Operation op;
-		op.argument_number = 2;
-		op.argument_names = names;
-		op.argument_types = types;
-		op.result_type = ArgumentType::vector;
-		op.check = [](Argument* arguments, ObjectG *result) -> bool
-		{
-			return(arguments[0].v->height() == arguments[1].v->height()
-				&& arguments[0].v->height() == ((VectorG*)result)->height());
-		};
-		op.source =
-		R"(
-			#version 330 core
-			uniform sampler2D a;
-			uniform sampler2D b;
-			out float c;
-			void main()
-			{
-				int position = int(gl_FragCoord.y - 0.5);
-				c = texelFetch(a, ivec2(0, position), 0).r + texelFetch(b, ivec2(0, position), 0).r;
-			};
-		)";
-		Index::_add_vvv = submit(op);
-	}
-	if (Index::_add_vvv == 0xFFFFFFFF) return false;
-	Argument arguments[2];
-	arguments[0].v = a;
-	arguments[1].v = b;
-	return perform(Index::_add_vvv, arguments, r);
-};
-
-bool MathG::subtract_vvv(VectorG *a, VectorG *b, VectorG *r) noexcept
-{
-	if (!_ok) return false;
-	if (Index::_subtract_vvv == 0xFFFFFFFE)
-	{
-		const char *names[2] = { "a", "b" };
-		ArgumentType types[2] = { ArgumentType::vector, ArgumentType::vector };
-		Operation op;
-		op.argument_number = 2;
-		op.argument_names = names;
-		op.argument_types = types;
-		op.result_type = ArgumentType::vector;
-		op.check = [](Argument* arguments, ObjectG *result) -> bool
-		{
-			return(arguments[0].v->height() == arguments[1].v->height()
-				&& arguments[0].v->height() == ((VectorG*)result)->height());
-		};
-		op.source =
-		R"(
-			#version 330 core
-			uniform sampler2D a;
-			uniform sampler2D b;
-			out float c;
-			void main()
-			{
-				int position = int(gl_FragCoord.y - 0.5);
-				c = texelFetch(a, ivec2(0, position), 0).r - texelFetch(b, ivec2(0, position), 0).r;
-			};
-		)";
-		Index::_subtract_vvv = submit(op);
-	}
-	if (Index::_subtract_vvv == 0xFFFFFFFF) return false;
-	Argument arguments[2];
-	arguments[0].v = a;
-	arguments[1].v = b;
-	return perform(Index::_subtract_vvv, arguments, r);
-};
-
-bool MathG::multiply_mvv(MatrixG *a, VectorG *b, VectorG *r) noexcept
-{
-	if (!_ok) return false;
-	if (Index::_multiply_mvv == 0xFFFFFFFE)
-	{
-		const char *names[3] = { "a", "b", "awidth" };
-		ArgumentType types[3] = { ArgumentType::vector, ArgumentType::vector, ArgumentType::int_ };
-		Operation op;
-		op.argument_number = 3;
-		op.argument_names = names;
-		op.argument_types = types;
-		op.result_type = ArgumentType::vector;
-		op.check = [](Argument* arguments, ObjectG *result) -> bool
-		{
-			return(arguments[0].v->height() == arguments[1].v->height()
-				&& arguments[0].v->height() == ((VectorG*)result)->height());
-		};
-		op.source =
-		R"(
-			#version 330 core
-
-			uniform sampler2D a;
-			uniform sampler2D b;
-			uniform int awidth;
-
-			out float c;
-
-			void main()
-			{
-				int position = int(gl_FragCoord.y - 0.5);
-				float sum = 0.0;
-				for (int i = 0; i < awidth; i++)
-				{
-					sum += texelFetch(a, ivec2(i, position), 0).r * texelFetch(b, ivec2(0, position), 0).r;
-				}
-				c = sum;
-			};
-		)";
-		Index::_multiply_mvv = submit(op);
-	}
-	if (Index::_multiply_mvv == 0xFFFFFFFF) return false;
-	Argument arguments[2];
-	arguments[0].m = a;
-	arguments[1].v = b;
-	return perform(Index::_multiply_mvv, arguments, r);
+	return true;
 };
 
 void MathG::free() noexcept
 {
-	if (Object::_vbo1d != GL_ERR) glDeleteBuffers(1, &Object::_vbo1d);
-	if (Object::_vao1d != GL_ERR) glDeleteVertexArrays(1, &Object::_vao1d);
-	if (Object::_vbo2d != GL_ERR) glDeleteBuffers(1, &Object::_vbo2d);
-	if (Object::_vao2d != GL_ERR) glDeleteVertexArrays(1, &Object::_vao2d);
-	if (Shader::_distribute1d != GL_ERR) glDeleteShader(Shader::_distribute1d);
-	if (Shader::_distribute2d != GL_ERR) glDeleteShader(Shader::_distribute2d);
+	if (Object::_vbo1d != MG_ERROR && Object::_vbo1d != MG_UNINITED) glDeleteBuffers(1, &Object::_vbo1d);
+	if (Object::_vbo1d != MG_ERROR && Object::_vbo1d != MG_UNINITED) glDeleteVertexArrays(1, &Object::_vao1d);
+	if (Object::_vbo2d != MG_ERROR && Object::_vbo2d != MG_UNINITED) glDeleteBuffers(1, &Object::_vbo2d);
+	if (Object::_vbo2d != MG_ERROR && Object::_vbo2d != MG_UNINITED) glDeleteVertexArrays(1, &Object::_vao2d);
+	if (Shader::_distribute1d != MG_ERROR && Shader::_distribute1d != MG_UNINITED) glDeleteShader(Shader::_distribute1d);
+	if (Shader::_distribute2d != MG_ERROR && Shader::_distribute2d != MG_UNINITED) glDeleteShader(Shader::_distribute2d);
 	for (unsigned int i = 0; i < _noperations; i++)
 	{
-		::free(_operations[i].argument_names);
-		::free(_operations[i].argument_types);
-		::free(_operations[i].argument_locations);
+		if (_operations[i].name != nullptr) ::FreeEnvironmentStrings(_operations[i].name);
+		if (_operations[i].source != nullptr) ::FreeEnvironmentStrings(_operations[i].source);
+		if (_operations[i].argument_names != nullptr)
+		{
+			for (unsigned int j = 0; j < _operations[i].argument_number; j++)
+				::free(_operations[i].argument_names[j]);
+			::free(_operations[i].argument_names);
+		}
+		if (_operations[i].argument_types != nullptr) ::free(_operations[i].argument_types);
+		if (_operations[i].argument_locations != nullptr) ::free(_operations[i].argument_locations);
 		glDeleteProgram(_operations[i].program);
 	}
 	

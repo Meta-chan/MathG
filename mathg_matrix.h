@@ -13,8 +13,9 @@
 
 MatrixG::MatrixG(unsigned int width, unsigned int height, bool *ok)
 {
+	_matrix = true;
 	glGenTextures(1, &_texture);
-	if (_texture != GL_ERR)
+	if (_texture != MG_ERROR)
 	{
 		unsigned int position;
 		ObjectG *object = this;
@@ -90,12 +91,12 @@ bool MatrixG::store_column(unsigned int column, const float *data)
 
 MatrixG::~MatrixG()
 {
-	if (_texture != GL_ERR)
+	if (_texture != MG_ERROR)
 	{
 		MathG::_unbind_object(this);
 		glDeleteTextures(1, &_texture);
 	}
-	if (_framebuffer != GL_ERR) glDeleteFramebuffers(1, &_framebuffer);
+	if (_framebuffer != MG_ERROR) glDeleteFramebuffers(1, &_framebuffer);
 	_ok = false;
 };
 

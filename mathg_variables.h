@@ -11,17 +11,17 @@
 #ifndef MATHG_VARIABLES
 #define MATHG_VARIABLES
 
-GLuint MathG::Object::_vao1d = GL_ERR;
-GLuint MathG::Object::_vbo1d = GL_ERR;
-GLuint MathG::Object::_vao2d = GL_ERR;
-GLuint MathG::Object::_vbo2d = GL_ERR;
+GLuint MathG::Object::_vao1d = MG_UNINITED;
+GLuint MathG::Object::_vbo1d = MG_UNINITED;
+GLuint MathG::Object::_vao2d = MG_UNINITED;
+GLuint MathG::Object::_vbo2d = MG_UNINITED;
 
-GLuint MathG::Shader::_distribute1d = GL_ERR;
-GLuint MathG::Shader::_distribute2d = GL_ERR;
+GLuint MathG::Shader::_distribute1d = MG_UNINITED;
+GLuint MathG::Shader::_distribute2d = MG_UNINITED;
 
-unsigned int MathG::Index::_add_vvv = 0xFFFFFFFF;
-unsigned int MathG::Index::_subtract_vvv = 0xFFFFFFFF;
-unsigned int MathG::Index::_multiply_mvv = 0xFFFFFFFF;
+unsigned int MathG::Index::_add_vvv = MG_UNINITED_INDEX;
+unsigned int MathG::Index::_subtract_vvv = MG_UNINITED_INDEX;
+unsigned int MathG::Index::_multiply_mvv = MG_UNINITED_INDEX;
 
 #if defined(IR_MATHG_FREEGLUT)
 	int MathG::_window = 0;
