@@ -152,8 +152,8 @@ public:
 	///Operation information
 	struct Operation
 	{
-		const char *name;					///< Operation name, used in debugging
-		const char *source;					///< Source code in GLSL. See mathg_implementation.h to learn how to write it
+		const char *name;					///< Operation name
+		const char *source;					///< Source code in GLSL. See mathg_basic.h to learn how to write it
 		ArgumentType result_type;			///< Return type
 		unsigned int argument_number;		///< Argument number
 		const char ** argument_names;		///< Argument names
@@ -228,9 +228,9 @@ public:
 	///@param print Print compilation and linking errors to @c stdout
 	static bool init(bool print) noexcept;
 	///Initializes custom operation
-	///@param operation Operation to submit
+	///@param operation Operation to submit. If operation with given name already exists, @c submit returns it's index.
 	///@return Returns operation index on success or @c 0xFFFFFFFF on fail
-	static unsigned int submit(const Operation &operation) noexcept;
+	static unsigned int submit(const Operation *operation) noexcept;
 	///Performs custom operation
 	///@param operation Operation index returned by @c submit
 	///@return @c true or @c false dependent on success or fail

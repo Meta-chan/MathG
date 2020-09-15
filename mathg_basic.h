@@ -28,7 +28,7 @@ bool MathG::add_vvv(VectorG *a, VectorG *b, VectorG *r) noexcept
 				c = texelFetch(a, ivec2(0, position), 0).r + texelFetch(b, ivec2(0, position), 0).r;
 			};
 		)";
-		Index::_add_vvv = submit(op);
+		Index::_add_vvv = submit(&op);
 	}
 	if (Index::_add_vvv == MG_ERROR_INDEX) return false;
 	Argument arguments[2];
@@ -67,7 +67,7 @@ bool MathG::subtract_vvv(VectorG *a, VectorG *b, VectorG *r) noexcept
 				c = texelFetch(a, ivec2(0, position), 0).r - texelFetch(b, ivec2(0, position), 0).r;
 			};
 		)";
-		Index::_subtract_vvv = submit(op);
+		Index::_subtract_vvv = submit(&op);
 	}
 	if (Index::_subtract_vvv == MG_ERROR_INDEX) return false;
 	Argument arguments[2];
@@ -116,7 +116,7 @@ bool MathG::multiply_mvv(MatrixG *a, VectorG *b, VectorG *r) noexcept
 				c = sum;
 			};
 		)";
-		Index::_multiply_mvv = submit(op);
+		Index::_multiply_mvv = submit(&op);
 	}
 	if (Index::_multiply_mvv == MG_ERROR_INDEX) return false;
 	Argument arguments[3];

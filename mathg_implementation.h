@@ -288,7 +288,6 @@ bool MathG::init(bool print) noexcept
 	if (_window < 1) return false;
 	glutHideWindow();
 	glutDisplayFunc([](){});
-	glDisable(GL_MULTISAMPLE);
 	
 #elif defined(IR_MATHG_SDL2)
 	//Initializing SDL
@@ -334,6 +333,9 @@ bool MathG::init(bool print) noexcept
 	eglMakeCurrent(_display, eglSurf, eglSurf, eglCtx);
 #endif
 
+	//Disabling multisampling
+	glDisable(GL_MULTISAMPLE);
+
 	//Initializing GLEW
 	if (glewInit() != GLEW_OK) return false;
 
@@ -355,14 +357,30 @@ bool MathG::init(bool print) noexcept
 	return true;
 };
 
-unsigned int MathG::submit(const Operation &operation) noexcept
+unsigned int MathG::submit(const Operation *operation) noexcept
 {
+	//Check for nullptr
+	if(operation->name == nullptr
+	|| operation->source == nullptr
+	|| operation->argument_types == nullptr
+	|| operation->argument_names == nullptr) return MG_ERROR_INDEX;
+	for (unsigned int i = 0; i < operation->argument_number; i++)
+	{
+		if (operation->argument_names[i] == nullptr) return MG_ERROR_INDEX;
+	}
+
+	//Check if already submitted
+	for (unsigned int i = 0; i < _noperations; i++)
+	{
+		if (strcmp(operation->name, _operations[i].name) == 0) return i;
+	}
+
 	//Compile vertex shader
-	if (operation.result_type == ArgumentType::vector)
+	if (operation->result_type == ArgumentType::vector)
 	{
 		if (!_compile_distribute1d()) return MG_ERROR_INDEX;
 	}
-	else if (operation.result_type == ArgumentType::matrix)
+	else if (operation->result_type == ArgumentType::matrix)
 	{
 		if (!_compile_distribute2d()) return MG_ERROR_INDEX;
 	}
@@ -379,9 +397,9 @@ unsigned int MathG::submit(const Operation &operation) noexcept
 	});
 	shader = glCreateShader(GL_FRAGMENT_SHADER);
 	if (shader == MG_ERROR) return false;
-	glShaderSource(shader, 1, &operation.source, nullptr);
+	glShaderSource(shader, 1, &operation->source, nullptr);
 	glCompileShader(shader);
-	if (!_get_compile_status(shader, operation.name)) return false;
+	if (!_get_compile_status(shader, operation->name)) return false;
 	
 	//Linking program
 	ir::LambdaResource<GLuint> program([](GLuint* p)
@@ -397,12 +415,12 @@ unsigned int MathG::submit(const Operation &operation) noexcept
 	glAttachShader(program, Shader::_distribute1d);
 	glAttachShader(program, shader);
 	glLinkProgram(program);
-	if (!_get_link_status(program, operation.name)) return false;
+	if (!_get_link_status(program, operation->name)) return false;
 
 	//Checking uniforms
-	for (unsigned int i = 0; i < operation.argument_number; i++)
+	for (unsigned int i = 0; i < operation->argument_number; i++)
 	{
-		if (glGetUniformLocation(program, operation.argument_names[i]) == MG_ERROR)
+		if (glGetUniformLocation(program, operation->argument_names[i]) == MG_ERROR)
 			return MG_ERROR_INDEX;
 	}
 
@@ -413,33 +431,33 @@ unsigned int MathG::submit(const Operation &operation) noexcept
 	_noperations++;
 	SubmittedOperation *so = &_operations[_noperations - 1];
 	//name
-	so->name = operation.name != nullptr ? _strdup(operation.name) : nullptr;
+	so->name = _strdup(operation->name);
 	//source
-	so->source = _strdup(operation.source);
-	if (so->source == nullptr) return MG_ERROR_INDEX;
+	so->source = _strdup(operation->source);
 	//result_type
-	so->result_type = operation.result_type;
+	so->result_type = operation->result_type;
 	//argument_number
-	so->argument_number = operation.argument_number;
+	so->argument_number = operation->argument_number;
 	//argument_names
-	so->argument_names = (char**)malloc(operation.argument_number * sizeof(char*));
+	so->argument_names = (char**)malloc(operation->argument_number * sizeof(char*));
 	if (so->argument_names == nullptr) return MG_ERROR_INDEX;
-	memset(so->argument_names, 0, operation.argument_number * sizeof(char*));
-	for (unsigned int i = 0; i < operation.argument_number; i++)
+	memset(so->argument_names, 0, operation->argument_number * sizeof(char*));
+	for (unsigned int i = 0; i < operation->argument_number; i++)
 	{
-		so->argument_names[i] = _strdup(operation.argument_names[i]);
+		so->argument_names[i] = _strdup(operation->argument_names[i]);
 		if (so->argument_names[i] == nullptr) return MG_ERROR_INDEX;
 	}
 	//argument_types
-	so->argument_types = (ArgumentType*)malloc(operation.argument_number * sizeof(ArgumentType));
+	so->argument_types = (ArgumentType*)malloc(operation->argument_number * sizeof(ArgumentType));
 	if (so->argument_types == nullptr) return MG_ERROR_INDEX;
-	memcpy(so->argument_types, operation.argument_types, operation.argument_number * sizeof(ArgumentType));
+	memcpy(so->argument_types, operation->argument_types, operation->argument_number * sizeof(ArgumentType));
 	//argument_locations
-	so->argument_locations = (GLuint*)malloc(operation.argument_number * sizeof(GLuint));
-	for (unsigned int i = 0; i < operation.argument_number; i++)
-		so->argument_locations[i] = glGetUniformLocation(program, operation.argument_names[i]);
+	so->argument_locations = (GLuint*)malloc(operation->argument_number * sizeof(GLuint));
+	if (so->argument_locations == nullptr) return MG_ERROR_INDEX;
+	for (unsigned int i = 0; i < operation->argument_number; i++)
+		so->argument_locations[i] = glGetUniformLocation(program, operation->argument_names[i]);
 	//check
-	so->check = operation.check;
+	so->check = operation->check;
 	//program
 	so->program = program;
 	program = MG_ERROR;

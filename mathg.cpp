@@ -17,9 +17,9 @@
 #include <random>
 #include <time.h>
 
-#define SIZE 1000
-#define N 100
-#define ALIGN 4
+#define SIZE 2000
+#define N 1000
+#define ALIGN 8
 
 void test()
 {
