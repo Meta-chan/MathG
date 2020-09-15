@@ -412,7 +412,7 @@ unsigned int MathG::submit(const Operation *operation) noexcept
 	});
 	program = glCreateProgram();
 	if (program == MG_ERROR) return false;
-	glAttachShader(program, Shader::_distribute1d);
+	glAttachShader(program, operation->result_type == ArgumentType::vector ? Shader::_distribute1d : Shader::_distribute2d);
 	glAttachShader(program, shader);
 	glLinkProgram(program);
 	if (!_get_link_status(program, operation->name)) return false;
@@ -494,11 +494,11 @@ bool MathG::perform(unsigned int operation, Argument *args, ObjectG *r) noexcept
 	if (!r->ok()) return false;
 	if (op->result_type == ArgumentType::vector)
 	{
-		if (!_create_distribution1d() || !_compile_distribute1d() || r->matrix()) return false;
+		if (!_create_distribution1d() || r->matrix()) return false;
 	}
 	else
 	{
-		if (!_create_distribution1d() || !_compile_distribute2d() || !r->matrix()) return false;
+		if (!_create_distribution2d() || !r->matrix()) return false;
 	}
 
 	//User check
@@ -542,8 +542,8 @@ bool MathG::perform(unsigned int operation, Argument *args, ObjectG *r) noexcept
 	}
 	else
 	{
-		glViewport(0, 0, ((MatrixG*)r)->width(), ((MatrixG*)r)->width());
-		glDrawArrays(GL_TRIANGLES, 0, 6);
+		glViewport(0, 0, ((MatrixG*)r)->width(), ((MatrixG*)r)->height());
+		glDrawArrays(GL_QUADS, 0, 6);
 	}
 
 	//Flushing

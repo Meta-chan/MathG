@@ -21,7 +21,7 @@
 #define N 1000
 #define ALIGN 8
 
-void test()
+void test_performance()
 {
 	std::default_random_engine generator;
 	std::uniform_real_distribution<float> distribution(-1.0f, 1.0f);
@@ -65,11 +65,78 @@ void test()
 	return;
 };
 
+void test_1d()
+{
+	MathG::Operation op;
+	op.name = "r";
+	op.argument_number = 1;
+	const char *names[1] = { "r" };
+	op.argument_names = names;
+	MathG::ArgumentType types[1] = { MathG::ArgumentType::float_ };
+	op.argument_types = types;
+	op.result_type = MathG::ArgumentType::vector; 
+	op.check = nullptr;
+	op.source =
+		R"(
+		#version 330 core
+		uniform float r;
+		out float o;
+
+		void main()
+		{
+			o = r;
+		};
+	)";
+	unsigned int i = MathG::submit(&op);
+
+	MathG::Argument arg[1];
+	arg[0].f = 0.42f;
+	VectorG v(1, nullptr);
+	MathG::perform(i, arg, &v);
+	float f = 0;
+	v.load(&f);
+	GLenum e = glGetError();
+};
+
+void test_2d()
+{
+	MathG::Operation op;
+	op.name = "r";
+	op.argument_number = 1;
+	const char *names[1] = { "r" };
+	op.argument_names = names;
+	MathG::ArgumentType types[1] = { MathG::ArgumentType::float_ };
+	op.argument_types = types;
+	op.check = nullptr;
+	op.result_type = MathG::ArgumentType::matrix;
+	op.source = 
+	R"(
+		#version 330 core
+		uniform float r;
+		out float o;
+
+		void main()
+		{
+			o = r;
+		};
+	)";
+	unsigned int i = MathG::submit(&op);
+
+	MathG::Argument arg[1];
+	arg[0].f = 0.42f;
+	MatrixG m(1, 1, nullptr);
+	MathG::perform(i, arg, &m);
+	float f = 0;
+	m.load(&f);
+	f = 0.0f;
+	GLenum e = glGetError();
+};
+
 int main(int argc, char *argv[])
 {
 	if (MathG::init(true))
 	{
-		test();
+		test_performance();
 		MathG::free();
 	}
 	getchar();
