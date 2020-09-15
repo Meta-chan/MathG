@@ -85,7 +85,7 @@ bool MathG::_compile_distribute1d() noexcept
 		layout(location = 0) in float position;
 		void main()
 		{
-			gl_Position = vec4(0.5f, position, 0.0f, 1.0f);
+			gl_Position = vec4(0.01f, position, 0.0f, 1.0f);
 		};
 	)";
 
@@ -288,7 +288,8 @@ bool MathG::init(bool print) noexcept
 	if (_window < 1) return false;
 	glutHideWindow();
 	glutDisplayFunc([](){});
-	glDisable(GLUT_MULTISAMPLE);
+	glDisable(GL_MULTISAMPLE);
+	
 #elif defined(IR_MATHG_SDL2)
 	//Initializing SDL
 	if (SDL_Init(SDL_INIT_VIDEO) < 0) return false;
@@ -512,8 +513,9 @@ bool MathG::perform(unsigned int operation, Argument *args, ObjectG *r) noexcept
 		glGenFramebuffers(1, &r->_framebuffer);
 		if (r->_framebuffer == MG_ERROR) return false;
 	}
+	glBindFramebuffer(GL_FRAMEBUFFER, r->_framebuffer);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, r->_texture, 0);
-
+	
 	//Setting view and executing
 	if (op->result_type == ArgumentType::vector)
 	{
@@ -542,8 +544,8 @@ void MathG::free() noexcept
 	if (Shader::_distribute2d != MG_ERROR && Shader::_distribute2d != MG_UNINITED) glDeleteShader(Shader::_distribute2d);
 	for (unsigned int i = 0; i < _noperations; i++)
 	{
-		if (_operations[i].name != nullptr) ::FreeEnvironmentStrings(_operations[i].name);
-		if (_operations[i].source != nullptr) ::FreeEnvironmentStrings(_operations[i].source);
+		if (_operations[i].name != nullptr) ::free(_operations[i].name);
+		if (_operations[i].source != nullptr) ::free(_operations[i].source);
 		if (_operations[i].argument_names != nullptr)
 		{
 			for (unsigned int j = 0; j < _operations[i].argument_number; j++)
