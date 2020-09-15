@@ -543,7 +543,7 @@ bool MathG::perform(unsigned int operation, Argument *args, ObjectG *r) noexcept
 	else
 	{
 		glViewport(0, 0, ((MatrixG*)r)->width(), ((MatrixG*)r)->height());
-		glDrawArrays(GL_QUADS, 0, 6);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
 	}
 
 	//Flushing
