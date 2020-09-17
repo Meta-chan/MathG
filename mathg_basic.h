@@ -111,7 +111,7 @@ bool MathG::multiply_mvv(MatrixG *a, VectorG *b, VectorG *r) noexcept
 				float sum = 0.0;
 				for (int i = 0; i < awidth; i++)
 				{
-					sum += texelFetch(a, ivec2(i, position), 0).r * texelFetch(b, ivec2(0, position), 0).r;
+					sum += texelFetch(a, ivec2(i, position), 0).r * texelFetch(b, ivec2(0, i), 0).r;
 				}
 				c = sum;
 			};

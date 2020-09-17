@@ -17,12 +17,12 @@
 #include <random>
 #include <time.h>
 
-#define SIZE 2000
-#define N 1000
-#define ALIGN 8
-
 void test_performance()
 {
+	const unsigned int SIZE = 2000;
+	const unsigned int N = 1000;
+	const unsigned int ALIGN = 8;
+
 	std::default_random_engine generator;
 	std::uniform_real_distribution<float> distribution(-1.0f, 1.0f);
 	bool ok;
@@ -62,6 +62,53 @@ void test_performance()
 	printf("GPU done in %f seconds\n", (float)(clock() - cl) / CLOCKS_PER_SEC);
 
 	cg.load(cc.data());
+	return;
+};
+
+void test_accurance()
+{
+	const unsigned int SIZE = 2;
+
+	std::default_random_engine generator;
+	std::uniform_real_distribution<float> distribution(-1.0f, 1.0f);
+	
+	float a[SIZE * SIZE], b[SIZE], c[SIZE];
+	for (unsigned int i = 0; i < SIZE * SIZE; i++) a[i] = distribution(generator);
+	for (unsigned int i = 0; i < SIZE; i++) b[i] = distribution(generator);
+
+	//CPU
+	for (unsigned int i = 0; i < SIZE; i++)
+	{
+		float sum = 0.0f;
+		for (unsigned int j = 0; j < SIZE; j++)
+		{
+			sum += a[SIZE * i + j] * b[j];
+		}
+		c[i] = sum;
+	}
+
+	//GPU
+	bool ok;
+	MatrixG ag(SIZE, SIZE, &ok);
+	if (!ag.ok() || !ag.store(a)) return;
+	VectorG bg(SIZE, &ok);
+	if (!bg.ok() || !bg.store(b)) return;
+	VectorG cg(SIZE, &ok);
+	if (!cg.ok()) return;
+	if (!MathG::multiply_mvv(&ag, &bg, &cg)) return;
+	if (!cg.load(b)) return;
+
+	//Compare
+	bool match = true;
+	for (unsigned int i = 0; i < SIZE; i++)
+	{
+		if (c[i] != b[i])
+		{
+			match = false;
+		}
+	}
+	printf(match ? "match\n" : "no match\n");
+
 	return;
 };
 
@@ -136,7 +183,7 @@ int main(int argc, char *argv[])
 {
 	if (MathG::init(true))
 	{
-		test_performance();
+		test_accurance();
 		MathG::free();
 	}
 	getchar();
