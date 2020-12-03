@@ -48,9 +48,7 @@ At the moment MathG depends on [GLEW](http://glew.sourceforge.net), [SDL](https:
    - Install Freeglut/bin/(Debug/freeglutd.dll|Release/freeglut.dll)
    - Add Freeglut/include to include directories
    - Add Freeglut/lib/(Debug|Release) to libraries directories
-   - it may be needed to set subsystem to CONSOLE
- - With EGL:
-   - No information (I do not know)
+   - It may be needed to set subsystem to CONSOLE
 
  (tested on Windows & Visual Studio 17)
 

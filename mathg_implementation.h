@@ -280,7 +280,7 @@ bool MathG::init(bool print) noexcept
 	//Initializing Freeglut
 	glutInit(&argc, argv);
 	glutInitDisplayMode(0);
-	glutInitContextVersion(3, 3);
+	glutInitContextVersion(2, 0);
 	glutInitContextFlags(GLUT_FORWARD_COMPATIBLE | GLUT_DEBUG);
 	glutInitContextProfile(GLUT_CORE_PROFILE);
 	glutInitWindowSize(100, 100);
@@ -292,8 +292,8 @@ bool MathG::init(bool print) noexcept
 #elif defined(IR_MATHG_SDL2)
 	//Initializing SDL
 	if (SDL_Init(SDL_INIT_VIDEO) < 0) return false;
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
 	_window = SDL_CreateWindow("MathG", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,	100, 100, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
 	if (_window == nullptr) return false;
 	_context = SDL_GL_CreateContext(_window);

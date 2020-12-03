@@ -45,11 +45,11 @@ void test_performance()
 	ir::VectorC<float, ALIGN> cc(SIZE, &ok); if (!ok) return;
 	VectorG cg(SIZE, &ok); if (!ok) return;
 	
-	ir::MathC<float, ALIGN>::multiply_mvv(&ac, &bc, &cc);
+	cc.assign_mul(&ac, &bc);
 	clock_t cl = clock();
 	for (unsigned int i = 0; i < N; i++)
 	{
-		ir::MathC<float, ALIGN>::multiply_mvv(&ac, &bc, &cc);
+		cc.assign_mul(&ac, &bc);
 	}
 	printf("CPU done in %f seconds\n", (float)(clock() - cl)/CLOCKS_PER_SEC);
 
