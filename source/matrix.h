@@ -296,7 +296,7 @@ bool mathg::Matrix::assign(const Function *function, ...) noexcept
 			break;
 
 		default:
-			glUniform1f(function->_uniforms[i].location, va_arg(arguments, double));
+			glUniform1f(function->_uniforms[i].location, (GLfloat)va_arg(arguments, double));
 		}
 	}
 	va_end(arguments);

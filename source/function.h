@@ -61,8 +61,8 @@ void mathg::Function::_row(Preprocessor *p)
 		p->local_row_used = true;
 		p->source.insert(p->local_start, "int row = int(gl_FragCoord.y - 0.5);");
 		p->i += strlen("int row = int(gl_FragCoord.y - 0.5);");
-		p->i += strlen("row");
 	}
+	p->i += strlen("row");
 }
 
 void mathg::Function::_column(Preprocessor *p)
@@ -72,8 +72,8 @@ void mathg::Function::_column(Preprocessor *p)
 		p->local_column_used = true;
 		p->source.insert(p->local_start, "int column = int(gl_FragCoord.x - 0.5);");
 		p->i += strlen("int column = int(gl_FragCoord.x - 0.5);");
-		p->i += strlen("column");
 	}
+	p->i += strlen("column");
 }
 
 bool mathg::Function::_matrix_name_dot(Preprocessor *p, Uniform *matrix, size_t replace_start)

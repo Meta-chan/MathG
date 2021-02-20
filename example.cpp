@@ -140,11 +140,12 @@ void test_gpu(const float * __restrict a, float * __restrict b, float * __restri
 
 		void main()
 		{
-			float sum = 0.0f;
+			float sum = 0.0;
 			for (int i = 0; i < a.width; i++) sum += a[row][i] * b[i][0];
 			r = sum;
 		}
 	)", nullptr);
+
 	mathg::Matrix ag(size, size, mathg::Type::float_);
 	mathg::Matrix bg(size, 1, mathg::Type::float_);
 	mathg::Matrix cg(size, 1, mathg::Type::float_);
@@ -157,6 +158,40 @@ void test_gpu(const float * __restrict a, float * __restrict b, float * __restri
 		if (!bg.assign(&multiply, &ag, &cg)) return;
 	}
 	printf("GPU done in %f seconds\n", (float)(clock() - start) / CLOCKS_PER_SEC);
+	cg.load(c);
+}
+
+void test_gpu_vectorized(const float * __restrict a, float * __restrict b, float * __restrict c, int size, int n)
+{
+	mathg::Function multiply(R"(
+		matrix float a;
+		matrix float b;
+		out float r;
+
+		void main()
+		{
+			vec4 sum = vec4(0.0f, 0.0f, 0.0f, 0.0f);
+			int i = 0;
+			for (i = 0; i + 3 < a.width; i += 4)
+				sum += vec4(a[row][i], a[row][i+1], a[row][i+2], a[row][i+3]) * vec4(b[i][0], b[i+1][0], b[i+2][0], b[i+3][0]);
+			float sumsum = dot(sum, vec4(1.0f, 1.0f, 1.0f, 1.0f));
+			for (; i < a.width; i++) sumsum += a[row][i] * b[i][0];
+			r = sumsum;
+		}
+	)", nullptr);
+
+	mathg::Matrix ag(size, size, mathg::Type::float_);
+	mathg::Matrix bg(size, 1, mathg::Type::float_);
+	mathg::Matrix cg(size, 1, mathg::Type::float_);
+	if (!multiply.ok() || !ag.ok() || !bg.ok() || !cg.ok()) return;
+
+	clock_t start = clock();
+	for (int time = 0; time < n; time++)
+	{
+		if (!cg.assign(&multiply, &ag, &bg)) return;
+		if (!bg.assign(&multiply, &ag, &cg)) return;
+	}
+	printf("GPU (vectorized) done in %f seconds\n", (float)(clock() - start) / CLOCKS_PER_SEC);
 	cg.load(c);
 }
 
@@ -181,6 +216,9 @@ void test()
 
 	b = bb;
 	test_gpu(a.data(), b.data(), c.data(), size, n);
+
+	b = bb;
+	test_gpu_vectorized(a.data(), b.data(), c.data(), size, n);
 
 	printf("All tests done\n");
 }
