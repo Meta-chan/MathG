@@ -166,7 +166,7 @@ void test()
 	test_simple_float();
 	test_simple_int();
 
-	const int size = 1000;
+	const int size = 1024;
 	const int n = 100;
 	std::vector<float> a(size * size);
 	std::vector<float> b(size);

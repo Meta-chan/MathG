@@ -1,5 +1,5 @@
 # Welcome to MathG!
-Ultra-light and simple GPU programming library. Just look at an example:
+Light and simple GPU programming library. Just look at the following example:
 ```c++
 //Creating matrices
 mathg::Matrix ag(2, 2, mathg::Type::double_);
@@ -36,7 +36,7 @@ cg.load(c);
 And that's it! We performed matrix multiplication in GPU!
 
 ### Shaders
-MathG preprocesses source codes into valid `GLSL` shaders. Here are a pair of moments you need to know about:
+MathG preprocesses source codes into valid `GLSL` shaders. Here is a pair of moments you need to know about:
  - `matrix` macro is used to declare a matrix.
  - You can  use brackets with matrices.
  - You can use `.width` and `.height` expressions with matrices. Appropriate uniform variables are created automatically.
