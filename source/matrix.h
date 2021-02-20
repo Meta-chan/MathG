@@ -249,7 +249,7 @@ bool mathg::Matrix::assign(const Function *function, ...) noexcept
 				break;
 
 			default:
-				va_arg(arguments, float);
+				va_arg(arguments, double);
 			}
 		}
 	}
@@ -296,7 +296,7 @@ bool mathg::Matrix::assign(const Function *function, ...) noexcept
 			break;
 
 		default:
-			glUniform1f(function->_uniforms[i].location, va_arg(arguments, float));
+			glUniform1f(function->_uniforms[i].location, va_arg(arguments, double));
 		}
 	}
 	va_end(arguments);
