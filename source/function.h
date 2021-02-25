@@ -8,7 +8,11 @@
 	Reinventing bicycles since 2020
 */
 
+#ifndef MATHG_FUNCTION_SOURCE
+#define MATHG_FUNCTION_SOURCE
+
 #include <string>
+#include <string.h>
 
 bool mathg::Function::_idcmp(const char *str1, const char *str2) noexcept
 {
@@ -364,7 +368,7 @@ mathg::Function::Function(const char *source, char *error) noexcept
 
 	//Compile fragment shader
 	GLuint shader = glCreateShader(GL_FRAGMENT_SHADER);
-	if (shader == System::_error) return;
+	if (shader == MathG::_error) return;
 	const char *processed_cstr = p.source.c_str();
 	glShaderSource(shader, 1, &processed_cstr, nullptr);
 	glCompileShader(shader);
@@ -379,12 +383,19 @@ mathg::Function::Function(const char *source, char *error) noexcept
 
 	//Linking program
 	_program = glCreateProgram();
-	if (_program == System::_error) return;
-	glAttachShader(_program, System::_distribute2d);
+	if (_program == MathG::_error) return;
+	glAttachShader(_program, MathG::_distribute2d);
 	glAttachShader(_program, shader);
 	glLinkProgram(_program);
 	glGetProgramiv(_program, GL_LINK_STATUS, &success);
-	if (!success) { glDeleteShader(shader); glDeleteProgram(_program); _program = System::_error; return; }
+	if (!success)
+	{
+		glGetShaderInfoLog(shader, 512, nullptr, error);
+		glDeleteShader(shader);
+		glDeleteProgram(_program);
+		_program = MathG::_error;
+		return;
+	}
 
 	//Finding uniforms
 	for (size_t i = 0; i < _uniforms.size(); i++)
@@ -404,15 +415,17 @@ mathg::Function::Function(const char *source, char *error) noexcept
 		_output.height_location = glGetUniformLocation(_program, std::string(_output.name + "_height").c_str());
 
 	//Final check
-	if (!System::_gl_ok()) { glDeleteProgram(_program); _program = System::_error; }
+	if (!MathG::_gl_ok()) { glDeleteProgram(_program); _program = MathG::_error; }
 }
 
 bool mathg::Function::ok() const noexcept
 {
-	return _program != System::_error;
+	return _program != MathG::_error;
 }
 
 mathg::Function::~Function() noexcept
 {
-	if (_program != System::_error) glDeleteProgram(_program);
+	if (_program != MathG::_error) glDeleteProgram(_program);
 }
+
+#endif	//#ifndef MATHG_FUCNTION_SOURCE

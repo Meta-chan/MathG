@@ -1,5 +1,5 @@
 # Welcome to MathG!
-Light and simple GPU programming library. Just look at the following example:
+Light and simple GPU programming library. take a look at the following example:
 ```c++
 //Creating matrices
 mathg::Matrix ag(2, 2, mathg::Type::double_);
@@ -46,20 +46,43 @@ MathG preprocesses source codes into valid `GLSL` shaders. Here is a pair of mom
 ### Platforms
 The code can be potentially run at every platform that supports `OpenGL 3.3`. Currently Windows and Linux are supported.
 
-### Installation
-After installing dependencies, you can do just this:
+### Structure and dependencies
+MathG core depends on [GLEW](http://glew.sourceforge.net) and requires `OpenGL 3.3` context. If you want to provide this context yourself, then include bare `MathG`:
 ```c++
 #define MATHG_IMPLEMENT
-#include <mathg.h>
+#include <mathg/mathg.h>
+
+int main()
+{
+	mathg::MathG::init();
+	//MathG job
+	mathg::MathG::finalize();
+}
 ```
 
-### Dependencies
-MathG depends on:
- - [GLEW](http://glew.sourceforge.net)
- - Libraries to create OpenGL environment, which can be:
-   - [SDL](https://www.libsdl.org) (`MATHG_SDL2` macro needs to be defined)
-   - [FreeGlut](http://freeglut.sourceforge.net) (`MATHG_FREEGLUT` macro needs to be defined)
-   - [EGL](https://www.khronos.org/egl/) (default option)
+But if you don't want to care about `OpenGL` context, use one of environments!
+```c++
+#define MATHG_IMPLEMENT
+#include <mathg/default.h>
+#include <mathg/mathg.h>
+
+int main()
+{
+	mathg::Default::init();
+	mathg::MathG::init();
+	//MathG job
+	mathg::MathG::finalize();
+	mathg::Default::finalize();
+}
+```
+
+The purpose of environment is to open `OpenGL 3.3` context (by opening a window mostly). `MathG` supports following environments:
+ - `<mathg/x.h>` \- X11 environment, defines `mathg::X`, depends on X11
+ - `<mathg/windows.h>` \- Windows environment, defines `mathg::Windows`
+ - `<mathg/default.h>` \- X11 or Windows environment, defines `mathg::Default`
+ - `<mathg/sdl2.h>` \- SDL2 environment, defines `mathg::SDL2`, depends on [SDL2](https://www.libsdl.org)
+ - `<mathg/freeglut.h>` \- Freeglut environment, defines `mathg::Freeglut`, depends on [Freeglut](http://freeglut.sourceforge.net)
+ - `<mathg/egl.h>` \- EGL environment, defines `mathg::EGL`, depends on [EGL](https://www.khronos.org/egl/)
 
 ### Documentation
 The code contains documentation comments, you may use [Doxygen](https://www.doxygen.nl/manual/starting.html) to create documentation. Also feel free to contact me any time!

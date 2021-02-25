@@ -11,8 +11,9 @@
 //#define NDEBUG
 
 #define MATHG_IMPLEMENT
-#define MATHG_FREEGLUT
+#include "include/mathg/default.h"
 #include "include/mathg/mathg.h"
+#include "include/mathg/function.h"
 
 #include <random>
 #include <time.h>
@@ -22,6 +23,7 @@ void test_simple_double()
 	double a[4] = { 1.0, 2.0, 3.0, 4.0 };
 	double b[2] = { 1.0, 1.0 };
 	double c[2];
+	char err[512];
 	mathg::Function multiply(R"(
 			matrix double a;
 			matrix double b;
@@ -33,7 +35,7 @@ void test_simple_double()
 				for (int i = 0; i < a.width; i++) sum += a[row][i] * b[i][0];
 				r = sum;
 			}
-		)", nullptr);
+		)", err);
 
 	mathg::Matrix ag(2, 2, mathg::Type::double_);
 	mathg::Matrix bg(2, 1, mathg::Type::double_);
@@ -112,19 +114,25 @@ void test_cpu(const float * __restrict a, float * __restrict b, float * __restri
 	for (int time = 0; time < n; time++)
 	{
 		#pragma omp parallel for
-		for (int row = 0; row < size; row++)
+		for (int column = 0; column < size; column++)
 		{
-			float sum = 0.0f;
-			for (int i = 0; i < size; i++) sum += a[row * size + i] * b[i];
-			c[row] = sum;
+			for (int row = 0; row < size; row++)
+			{
+				float sum = 0.0f;
+				for (int i = 0; i < size; i++) sum += a[row * size + i] * b[column * size + i];
+				c[row * size + column] = sum;
+			}
 		}
 
 		#pragma omp parallel for
-		for (int row = 0; row < size; row++)
+		for (int column = 0; column < size; column++)
 		{
-			float sum = 0.0f;
-			for (int i = 0; i < size; i++) sum += a[row * size + i] * c[i];
-			b[row] = sum;
+			for (int row = 0; row < size; row++)
+			{
+				float sum = 0.0f;
+				for (int i = 0; i < size; i++) sum += a[row * size + i] * c[column * size + i];
+				b[row * size + column] = sum;
+			}
 		}
 	}
 
@@ -141,14 +149,14 @@ void test_gpu(const float * __restrict a, float * __restrict b, float * __restri
 		void main()
 		{
 			float sum = 0.0;
-			for (int i = 0; i < a.width; i++) sum += a[row][i] * b[i][0];
+			for (int i = 0; i < a.width; i++) sum += a[row][i] * b[column][i];
 			r = sum;
 		}
 	)", nullptr);
 
 	mathg::Matrix ag(size, size, mathg::Type::float_);
-	mathg::Matrix bg(size, 1, mathg::Type::float_);
-	mathg::Matrix cg(size, 1, mathg::Type::float_);
+	mathg::Matrix bg(size, size, mathg::Type::float_);
+	mathg::Matrix cg(size, size, mathg::Type::float_);
 	if (!multiply.ok() || !ag.ok() || !bg.ok() || !cg.ok()) return;
 
 	clock_t start = clock();
@@ -173,16 +181,16 @@ void test_gpu_vectorized(const float * __restrict a, float * __restrict b, float
 			vec4 sum = vec4(0.0f, 0.0f, 0.0f, 0.0f);
 			int i = 0;
 			for (i = 0; i + 3 < a.width; i += 4)
-				sum += vec4(a[row][i], a[row][i+1], a[row][i+2], a[row][i+3]) * vec4(b[i][0], b[i+1][0], b[i+2][0], b[i+3][0]);
+				sum += vec4(a[row][i], a[row][i+1], a[row][i+2], a[row][i+3]) * vec4(b[i][column], b[column][i+1], b[column][i+2], b[column][i+3]);
 			float sumsum = dot(sum, vec4(1.0f, 1.0f, 1.0f, 1.0f));
-			for (; i < a.width; i++) sumsum += a[row][i] * b[i][0];
+			for (; i < a.width; i++) sumsum += a[row][i] * b[column][i];
 			r = sumsum;
 		}
 	)", nullptr);
 
 	mathg::Matrix ag(size, size, mathg::Type::float_);
-	mathg::Matrix bg(size, 1, mathg::Type::float_);
-	mathg::Matrix cg(size, 1, mathg::Type::float_);
+	mathg::Matrix bg(size, size, mathg::Type::float_);
+	mathg::Matrix cg(size, size, mathg::Type::float_);
 	if (!multiply.ok() || !ag.ok() || !bg.ok() || !cg.ok()) return;
 
 	clock_t start = clock();
@@ -201,15 +209,15 @@ void test()
 	test_simple_float();
 	test_simple_int();
 
-	const int size = 1024;
-	const int n = 100;
+	const int size = 512;
+	const int n = 10;
 	std::vector<float> a(size * size);
-	std::vector<float> b(size);
-	std::vector<float> c(size);
+	std::vector<float> b(size * size);
+	std::vector<float> c(size * size);
 	std::default_random_engine engine;
 	std::uniform_real_distribution<float> distribution(-0.1f, 0.1f);
 	for (int i = 0; i < size * size; i++) a[i] = distribution(engine);
-	for (int i = 0; i < size; i++) b[i] = distribution(engine);
+	for (int i = 0; i < size * size; i++) b[i] = distribution(engine);
 	std::vector<float> bb = b;
 
 	test_cpu(a.data(), b.data(), c.data(), size, n);
@@ -225,11 +233,12 @@ void test()
 
 int main(int argc, char *argv[])
 {
-	if (mathg::System::init())
+	if (mathg::Default::init() && mathg::MathG::init())
 	{
 		test();
 		getchar();
 	}
-	mathg::System::finalize();
+	mathg::MathG::finalize();
+	mathg::Default::finalize();
 	return 0;
 }
