@@ -30,6 +30,7 @@ namespace mathg
 		static GLXContext _context;
 		static Window _window;
 		static Colormap _colormap;
+		static bool _initialized;
 		static bool _ok;
 		
 		static int _handler(Display *display, XErrorEvent *event)						noexcept;

@@ -13,6 +13,7 @@
 
 #include "type.h"
 #include "mathg.h"
+#include "function.h"
 #include <vector>
 #include <GL/glew.h>
 
@@ -40,11 +41,18 @@ namespace mathg
 		Matrix(const Matrix &matrix)										noexcept;
 
 	public:
-		///Creates matrix and allocates graphical memory for it
+		///Creates empty matrix
+		Matrix()												noexcept;
+		///Creates matrix
 		///@param width Width of the matrix
 		///@param height Height of the matrix
 		///@param typ Type of elements in matrix
 		Matrix(GLsizei height, GLsizei width, Type typ)			noexcept;
+		///Initializes existing matrix
+		///@param width Width of the matrix
+		///@param height Height of the matrix
+		///@param typ Type of elements in matrix
+		bool init(GLsizei height, GLsizei width, Type typ)		noexcept;
 		///Returns width of matrix
 		GLsizei height()										const noexcept;
 		///Returns height of matrix
@@ -81,6 +89,8 @@ namespace mathg
 		///@param function Function to perform
 		///@return `true` n success, `false` on fail
 		bool assign(const Function *function, ...)				noexcept;
+		///Finalizes matrix
+		void finalize()											noexcept;
 		///Destroys matrix
 		~Matrix()												noexcept;
 	};

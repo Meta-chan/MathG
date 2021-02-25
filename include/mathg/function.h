@@ -17,7 +17,6 @@
 #include <vector>
 #include <string>
 
-
 namespace mathg
 {
 	class Matrix;
@@ -54,34 +53,43 @@ namespace mathg
 
 		std::vector<Uniform> _uniforms;
 		Output _output;
-		GLuint _program			= MathG::_error;
+		GLuint _program = MathG::_error;
 		
-		static bool _idcmp(const char *str1, const char *str2) noexcept;
-		static size_t _idlen(const char *str1) noexcept;
-		static size_t _spacelen(const char *str1) noexcept;
+		static bool _idcmp(const char *str1, const char *str2)	noexcept;
+		static size_t _idlen(const char *str1)					noexcept;
+		static size_t _spacelen(const char *str1)				noexcept;
+		Uniform *_idmatrix(const char *str1)					noexcept;
+		
 		void _row(Preprocessor *p);
 		void _column(Preprocessor *p);
-		bool _matrix_name_dot(Preprocessor *p, Uniform *matrix, size_t replace_start);
-		bool _matrix_name_bracket(Preprocessor *p, Uniform *matrix, size_t replace_start);
-		Uniform *_idmatrix(const Preprocessor *p);
-		bool _matrix_name(Preprocessor *p, Uniform *matrix);
-		bool _output_name(Preprocessor *p);
+		void _matrix_name_dot(Preprocessor *p, Uniform *matrix, size_t replace_start);
+		void _matrix_name_bracket(Preprocessor *p, Uniform *matrix, size_t replace_start);
+		void _matrix_name(Preprocessor *p, Uniform *matrix);
+		void _output_name(Preprocessor *p);
 
-		bool _matrix(Preprocessor *p);
-		bool _uniform(Preprocessor *p);
-		bool _out(Preprocessor *p);
+		void _matrix(Preprocessor *p);
+		void _uniform(Preprocessor *p);
+		void _out(Preprocessor *p);
 
 		Function(const Function &function) noexcept;
 		
 	public:
-		///Creates function from source (see examples)
+		///Creates empty function
+		Function()																	noexcept;
+		///Creates function from source
 		///@param source Source of function
 		///@param error Buffer to print error
-		Function(const char *source, char *error) noexcept;
+		Function(const char *source, char *error = nullptr, GLsizei error_size = 0)	noexcept;
+		///Initializes existing function
+		///@param source Source of function
+		///@param error Buffer to print error
+		bool init(const char *source, char *error = nullptr, GLsizei error_size = 0)noexcept;
 		///Returns if function is ok
-		bool ok() const noexcept;
+		bool ok()																	const noexcept;
+		///Finalizes function
+		void finalize()																noexcept;
 		///Destroys function
-		~Function() noexcept;
+		~Function()																	noexcept;
 	};
 }
 
@@ -89,4 +97,4 @@ namespace mathg
 	#include "../../source/function.h"
 #endif
 
-#endif	//#ifndef MATHG
+#endif	//#ifndef MATHG_FUNCTION

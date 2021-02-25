@@ -8,12 +8,9 @@
 	Reinventing bicycles since 2020
 */
 
-//#define NDEBUG
-
 #define MATHG_IMPLEMENT
 #include "include/mathg/default.h"
-#include "include/mathg/mathg.h"
-#include "include/mathg/function.h"
+#include "include/mathg/matrix.h"
 
 #include <random>
 #include <time.h>
@@ -23,7 +20,6 @@ void test_simple_double()
 	double a[4] = { 1.0, 2.0, 3.0, 4.0 };
 	double b[2] = { 1.0, 1.0 };
 	double c[2];
-	char err[512];
 	mathg::Function multiply(R"(
 			matrix double a;
 			matrix double b;
@@ -35,7 +31,7 @@ void test_simple_double()
 				for (int i = 0; i < a.width; i++) sum += a[row][i] * b[i][0];
 				r = sum;
 			}
-		)", err);
+		)");
 
 	mathg::Matrix ag(2, 2, mathg::Type::double_);
 	mathg::Matrix bg(2, 1, mathg::Type::double_);
@@ -53,7 +49,6 @@ void test_simple_float()
 	float a[4] = { 1.0f, 2.0f, 3.0f, 4.0f };
 	float b[2] = { 1.0f, 1.0f };
 	float c[2];
-	char er[512];
 	mathg::Function multiply(R"(
 			matrix float a;
 			matrix float b;
@@ -65,7 +60,7 @@ void test_simple_float()
 				for (int i = 0; i < a.width; i++) sum += a[row][i] * b[i][0];
 				r = sum;
 			}
-		)", er);
+		)");
 
 	mathg::Matrix ag(2, 2, mathg::Type::float_);
 	mathg::Matrix bg(2, 1, mathg::Type::float_);
@@ -94,7 +89,7 @@ void test_simple_int()
 				for (int i = 0; i < a.width; i++) sum += a[row][i] * b[i][0];
 				r = sum;
 			}
-		)", nullptr);
+		)");
 
 	mathg::Matrix ag(2, 2, mathg::Type::int_);
 	mathg::Matrix bg(2, 1, mathg::Type::int_);
@@ -152,7 +147,7 @@ void test_gpu(const float * __restrict a, float * __restrict b, float * __restri
 			for (int i = 0; i < a.width; i++) sum += a[row][i] * b[column][i];
 			r = sum;
 		}
-	)", nullptr);
+	)");
 
 	mathg::Matrix ag(size, size, mathg::Type::float_);
 	mathg::Matrix bg(size, size, mathg::Type::float_);
@@ -186,7 +181,7 @@ void test_gpu_vectorized(const float * __restrict a, float * __restrict b, float
 			for (; i < a.width; i++) sumsum += a[row][i] * b[column][i];
 			r = sumsum;
 		}
-	)", nullptr);
+	)");
 
 	mathg::Matrix ag(size, size, mathg::Type::float_);
 	mathg::Matrix bg(size, size, mathg::Type::float_);

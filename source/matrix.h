@@ -128,17 +128,29 @@ void mathg::Matrix::_unbind(Matrix *matrix) noexcept
 	}
 }
 
+mathg::Matrix::Matrix() noexcept
+{
+}
+
 mathg::Matrix::Matrix(GLsizei height, GLsizei width, Type typ) noexcept
 {
+	init(height, width, typ);
+}
+
+bool mathg::Matrix::init(GLsizei height, GLsizei width, Type typ) noexcept
+{
+	finalize();
+
 	if (height != 0 && width != 0)
 	{
 		glGenTextures(1, &_texture);
-		if (!MathG::_gl_ok()) { if (_texture != MathG::_error) glDeleteTextures(1, &_texture); _texture = MathG::_error; }
+		if (_texture == MathG::_error || !MathG::_gl_ok())
+			{ if (_texture != MathG::_error) glDeleteTextures(1, &_texture); _texture = MathG::_error; return false; }
 
 		GLint position;
 		Matrix *matrix = this;
 		if (!_bind(1, &matrix, &position))
-			{ glDeleteTextures(1, &_texture); _texture = MathG::_error; return; }
+			{ glDeleteTextures(1, &_texture); _texture = MathG::_error; return false; }
 		glActiveTexture(GL_TEXTURE0 + position);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
@@ -162,12 +174,13 @@ mathg::Matrix::Matrix(GLsizei height, GLsizei width, Type typ) noexcept
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, width, height, 0, GL_RED, GL_FLOAT, nullptr);
 		}
 
-		if (!MathG::_gl_ok()) { glDeleteTextures(1, &_texture); _texture = MathG::_error; }
+		if (!MathG::_gl_ok()) { glDeleteTextures(1, &_texture); _texture = MathG::_error; return false; }
 	}
 
 	_width = width;
 	_height = height;
 	_typ = typ;
+	return true;
 }
 
 GLsizei mathg::Matrix::height() const noexcept
@@ -435,18 +448,29 @@ bool mathg::Matrix::assign(const Function *function, ...) noexcept
 	return MathG::_gl_ok();
 }
 
-mathg::Matrix::~Matrix() noexcept
+void mathg::Matrix::finalize() noexcept
 {
 	if (_texture != MathG::_error)
 	{
 		_unbind(this);
 		glDeleteTextures(1, &_texture);
+		_texture = MathG::_error;
 	}
 
 	if (_framebuffer != MathG::_error)
 	{
 		glDeleteFramebuffers(1, &_framebuffer);
+		_framebuffer = MathG::_error;
 	}
+
+	_height = 0;
+	_width = 0;
+	_typ = Type::int_;
+}
+
+mathg::Matrix::~Matrix() noexcept
+{
+	finalize();
 }
 
 #endif	//#ifndef MATHG_MATRIX_SOURCE

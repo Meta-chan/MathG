@@ -16,14 +16,19 @@ HDC mathg::Windows::_dc					= NULL;
 HGLRC mathg::Windows::_gc				= NULL;
 WNDCLASS mathg::Windows::_window_class	= { 0 };
 HWND mathg::Windows::_window			= NULL;
+bool mathg::Windows::_initialized		= false;
+bool mathg::Windows::_ok				= false;
 
-LRESULT CALLBACK _window_proc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+LRESULT CALLBACK mathg::Windows::_window_proc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) noexcept
 {
 	return DefWindowProc(hWnd, uMsg, wParam, lParam);
 }
 
 bool mathg::Windows::init() noexcept
 {
+	if (_initialized) return _ok;
+	_initialized = true;
+
 	//Registering class
 	_window_class.lpfnWndProc = _window_proc;
 	_window_class.style = CS_HREDRAW | CS_VREDRAW;
@@ -58,12 +63,13 @@ bool mathg::Windows::init() noexcept
 	if ((_gc = wglCreateContext(_dc)) == NULL) return false;
 	if (!wglMakeCurrent(_dc, _gc)) return false;
 
+	_ok = true;
 	return true;
 }
 
 bool mathg::Windows::ok() noexcept
 {
-	return _window != NULL;
+	return _ok;
 }
 
 void mathg::Windows::finalize() noexcept
@@ -88,6 +94,9 @@ void mathg::Windows::finalize() noexcept
 		DestroyWindow(_window);
 		_window = NULL;
 	}
+
+	_initialized = false;
+	_ok = false;
 }
 
 #endif	//#ifndef MATHG_SDL2_SOURCE

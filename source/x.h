@@ -17,6 +17,7 @@ Display *mathg::X::_display		= nullptr;
 GLXContext mathg::X::_context	= 0;
 Window mathg::X::_window		= 0;
 Colormap mathg::X::_colormap	= 0;
+bool mathg::X::_initialized		= false;
 bool mathg::X::_ok				= false;
 
 bool mathg::X::_extension_supported(const char *extList, const char *extension) noexcept
@@ -47,6 +48,8 @@ int mathg::X::_handler(Display *display, XErrorEvent *event) noexcept
 bool mathg::X::init() noexcept
 {
 	//khronos.org/opengl/wiki/Tutorial:_OpenGL_3.0_Context_Creation_(GLX)
+	if (_initialized) return _ok;
+	_initialized = true;
 
 	//Open display
 	_display = XOpenDisplay(NULL);
@@ -165,18 +168,14 @@ bool mathg::X::init() noexcept
 	//If thare are, we have 2.0 context - I'm still considering it
 	_ok = true;
 	XSync(_display, False);
-	if (!_ok)
-	{
-		XSetErrorHandler(old_handler);
-		return false;
-	}
-
-	// Restore the original error handler
 	XSetErrorHandler(old_handler);
+	if (!_ok) return false;
+	_ok = false;
 
 	//Making context current
-	glXMakeCurrent(_display, _window, _context);
+	if (!glXMakeCurrent(_display, _window, _context)) return false;
 
+	_ok = true;
 	return true;
 }
 
@@ -218,6 +217,7 @@ void mathg::X::finalize() noexcept
 		_display = nullptr;
 	}
 
+	_initialized = false;
 	_ok = false;
 }
 

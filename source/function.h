@@ -11,6 +11,7 @@
 #ifndef MATHG_FUNCTION_SOURCE
 #define MATHG_FUNCTION_SOURCE
 
+#include <stdexcept>
 #include <string>
 #include <string.h>
 
@@ -58,6 +59,15 @@ size_t mathg::Function::_spacelen(const char *str1) noexcept
 	return l;
 }
 
+mathg::Function::Uniform *mathg::Function::_idmatrix(const char *str1) noexcept
+{
+	for (size_t j = 0; j < _uniforms.size(); j++)
+	{
+		if (_uniforms[j].matrix && _idcmp(str1, _uniforms[j].name.c_str())) return &_uniforms[j];
+	}
+	return nullptr;
+}
+
 void mathg::Function::_row(Preprocessor *p)
 {
 	if (!p->local_row_used)
@@ -80,7 +90,7 @@ void mathg::Function::_column(Preprocessor *p)
 	p->i += strlen("column");
 }
 
-bool mathg::Function::_matrix_name_dot(Preprocessor *p, Uniform *matrix, size_t replace_start)
+void mathg::Function::_matrix_name_dot(Preprocessor *p, Uniform *matrix, size_t replace_start)
 {
 	//Creating width and height
 	p->i++;
@@ -99,7 +109,6 @@ bool mathg::Function::_matrix_name_dot(Preprocessor *p, Uniform *matrix, size_t 
 		p->i += _idlen(&p->source[p->i]);
 		p->source.replace(replace_start, p->i - replace_start, matrix->name + "_width");
 		p->i = replace_start + matrix->name.size() + strlen("_width");
-		return true;
 	}
 	else if (_idcmp(&p->source[p->i], "height"))
 	{
@@ -115,12 +124,11 @@ bool mathg::Function::_matrix_name_dot(Preprocessor *p, Uniform *matrix, size_t 
 		p->i += _idlen(&p->source[p->i]);
 		p->source.replace(replace_start, p->i - replace_start, matrix->name + "_height");
 		p->i = replace_start + matrix->name.size() + strlen("_height");
-		return true;
 	}
-	return false;
+	else std::runtime_error("Invalid identifier after dor after matrix");
 }
 
-bool mathg::Function::_matrix_name_bracket(Preprocessor *p, Uniform *matrix, size_t replace_start)
+void mathg::Function::_matrix_name_bracket(Preprocessor *p, Uniform *matrix, size_t replace_start)
 {
 	//Extract row expresion
 	p->i++;
@@ -128,7 +136,7 @@ bool mathg::Function::_matrix_name_bracket(Preprocessor *p, Uniform *matrix, siz
 	size_t index_level = 1;
 	while (index_level != 0)
 	{
-		if (p->i == p->source.size()) return false;
+		if (p->i == p->source.size()) throw std::runtime_error("Missing bracket after opened bracket after matrix");
 		else if (p->source[p->i] == '[') index_level++;
 		else if (p->source[p->i] == ']') index_level--;
 		p->i++;
@@ -137,13 +145,13 @@ bool mathg::Function::_matrix_name_bracket(Preprocessor *p, Uniform *matrix, siz
 
 	//Extract column expression
 	p->i += _spacelen(&p->source[p->i]);
-	if (p->source[p->i] != '[') return false;
+	if (p->source[p->i] != '[') throw std::runtime_error("Missing second bracket expression after matrix");
 	p->i++;
 	size_t column_expression_start = p->i;
 	index_level = 1;
 	while (index_level != 0)
 	{
-		if (p->i == p->source.size()) return false;
+		if (p->i == p->source.size()) throw std::runtime_error("Missing bracket after opened bracket after matrix");
 		else if (p->source[p->i] == '[') index_level++;
 		else if (p->source[p->i] == ']') index_level--;
 		p->i++;
@@ -157,50 +165,42 @@ bool mathg::Function::_matrix_name_bracket(Preprocessor *p, Uniform *matrix, siz
 	p->source.replace(replace_start, p->i - replace_start, replacement);
 	if (matrix->typ == Type::double_) p->i = replace_start + strlen("packDouble2x32(texelFetch(") + matrix->name.size();
 	else p->i = replace_start + strlen("texelFetch(") + matrix->name.size();
-	return true;
 }
 
-mathg::Function::Uniform *mathg::Function::_idmatrix(const Preprocessor *p)
-{
-	for (size_t j = 0; j < _uniforms.size(); j++)
-	{
-		if (_uniforms[j].matrix && _idcmp(&p->source[p->i], _uniforms[j].name.c_str())) return &_uniforms[j];
-	}
-	return nullptr;
-}
-
-bool mathg::Function::_matrix_name(Preprocessor *p, Uniform *matrix)
+void mathg::Function::_matrix_name(Preprocessor *p, Uniform *matrix)
 {
 	size_t replace_start = p->i;
 	p->i += _idlen(&p->source[p->i]);
 	p->i += _spacelen(&p->source[p->i]);
-	if (p->source[p->i] == '[') return _matrix_name_bracket(p, matrix, replace_start);
-	else if (p->source[p->i] == '.') return _matrix_name_dot(p, matrix, replace_start);
-	else return false;
+	if (p->source[p->i] == '[') _matrix_name_bracket(p, matrix, replace_start);
+	else if (p->source[p->i] == '.') _matrix_name_dot(p, matrix, replace_start);
+	else throw std::runtime_error("Invalid matrix usage");
 }
 
-bool mathg::Function::_output_name(Preprocessor *p)
+void mathg::Function::_output_name(Preprocessor *p)
 {
 	p->i += _idlen(&p->source[p->i]);
 	p->i += _spacelen(&p->source[p->i]);
-	if (p->source[p->i] != '=') return false;
+	if (p->source[p->i] != '=') throw std::runtime_error("Invalid operation with output variable");
 	p->i++;
 	if (_output.typ == Type::double_) p->source.insert(p->i, "unpackDouble2x32(");
 	else p->source.insert(p->i, "(");
 
+	size_t start = p->i;
 	while (true)
 	{
-		if (p->i == p->source.size()) return false;
+		if (p->i == p->source.size()) throw std::runtime_error("Invalid operation with output variable");
 		else if (p->source[p->i] == ';')
 		{
 			p->source.insert(p->i, ")");
-			return true;
+			p->i = start;
+			return;
 		}
 		else p->i++;
 	}
 }
 
-bool mathg::Function::_matrix(Preprocessor *p)
+void mathg::Function::_matrix(Preprocessor *p)
 {
 	//Identify type
 	size_t replace_start = p->i;
@@ -230,7 +230,7 @@ bool mathg::Function::_matrix(Preprocessor *p)
 		replace = "uniform usampler2D";
 		p->uses_double = true;
 	}
-	else return false;
+	else throw std::runtime_error("Invalid matrix type");
 	p->i += _idlen(&p->source[p->i]);
 
 	//Replace
@@ -241,17 +241,17 @@ bool mathg::Function::_matrix(Preprocessor *p)
 	while (true)
 	{
 		p->i += _spacelen(&p->source[p->i]);
-		if (_idlen(&p->source[p->i]) == 0) return false;
+		if (_idlen(&p->source[p->i]) == 0) throw std::runtime_error("Invalid matrix declaration");
 		uniform.name = std::string(&p->source[p->i], _idlen(&p->source[p->i]));
 		p->i += _idlen(&p->source[p->i]);
 		_uniforms.push_back(uniform);
 		if (p->source[p->i] == ',') p->i++;
-		else if (p->source[p->i] == ';') return true;
-		else return false;
+		else if (p->source[p->i] == ';') return;
+		else throw std::runtime_error("Invalid matrix declaration");
 	}
 }
 
-bool mathg::Function::_uniform(Preprocessor *p)
+void mathg::Function::_uniform(Preprocessor *p)
 {
 	//Identify type
 	p->i += _idlen(&p->source[p->i]);
@@ -266,29 +266,27 @@ bool mathg::Function::_uniform(Preprocessor *p)
 		p->source.replace(p->i, strlen("double"), "ivec2");
 		p->uses_double = true;
 	}
-	else return false;
+	else throw std::runtime_error("Invalid uniform type");
 	p->i += _idlen(&p->source[p->i]);
 
 	//Register uniforms
 	while (true)
 	{
 		p->i += _spacelen(&p->source[p->i]);
-		if (_idlen(&p->source[p->i]) == 0) return false;
+		if (_idlen(&p->source[p->i]) == 0) throw std::runtime_error("Invalid uniform declaration");
 		uniform.name = std::string(&p->source[p->i], _idlen(&p->source[p->i]));
 		p->i += _idlen(&p->source[p->i]);
 		_uniforms.push_back(uniform);
 		if (p->source[p->i] == ',') p->i++;
-		else if (p->source[p->i] == ';') return false;
-		else return false;
+		else if (p->source[p->i] == ';') return;
+		else throw std::runtime_error("Invalid uniform declaration");
 	}
-	
-	return true;
 }
 
-bool mathg::Function::_out(Preprocessor *p)
+void mathg::Function::_out(Preprocessor *p)
 {	
 	//Identify type
-	if (!_output.name.empty()) return false;
+	if (!_output.name.empty()) throw std::runtime_error("Output already declared");
 	p->i += _idlen(&p->source[p->i]);
 	p->i += _spacelen(&p->source[p->i]);
 	if (_idcmp(&p->source[p->i], "int")) _output.typ = Type::int_;
@@ -304,15 +302,23 @@ bool mathg::Function::_out(Preprocessor *p)
 
 	//Register output
 	p->i += _spacelen(&p->source[p->i]);
-	if (_idlen(&p->source[p->i]) == 0) return false;
+	if (_idlen(&p->source[p->i]) == 0) throw std::runtime_error("Invalid output declaration");
 	_output.name = std::string(&p->source[p->i], _idlen(&p->source[p->i]));
 	p->i += _idlen(&p->source[p->i]);
-
-	return true;
 }
 
-mathg::Function::Function(const char *source, char *error) noexcept
+mathg::Function::Function() noexcept
 {
+}
+
+mathg::Function::Function(const char *source, char *error, GLsizei error_size) noexcept
+{
+	init(source, error, error_size);
+}
+
+bool mathg::Function::init(const char *source, char *error, GLsizei error_size) noexcept
+{
+	finalize();
 	Preprocessor p;
 	p.source = source;
 
@@ -332,18 +338,18 @@ mathg::Function::Function(const char *source, char *error) noexcept
 					{ p.local_level--; p.i++; }
 				else if (_idcmp(&p.source[p.i], "double"))
 					{ p.uses_double = true; p.i += _idlen(&p.source[p.i]); }
-				else if (p.source[p.i - 1] != '.' && _idmatrix(&p) != nullptr)
-					{ if (!_matrix_name(&p, _idmatrix(&p))) return; }
+				else if (p.source[p.i - 1] != '.' && _idmatrix(&p.source[p.i]) != nullptr)
+					{ _matrix_name(&p, _idmatrix(&p.source[p.i])); }
 				else if (p.source[p.i - 1] != '.' && _idcmp(&p.source[p.i], _output.name.c_str()))
-					{ if (!_output_name(&p)) return; }
+					{ _output_name(&p); }
 				else if (_idlen(&p.source[p.i]) > 0)
 					p.i += _idlen(&p.source[p.i]);
 				else
 					p.i++;
 			}
-			else if (_idcmp(&p.source[p.i], "matrix"))	{ if (!_matrix(&p)) return; }
-			else if (_idcmp(&p.source[p.i], "uniform"))	{ if (!_uniform(&p)) return; }
-			else if (_idcmp(&p.source[p.i], "out"))		{ if (!_out(&p)) return; }
+			else if (_idcmp(&p.source[p.i], "matrix")) _matrix(&p);
+			else if (_idcmp(&p.source[p.i], "uniform")) _uniform(&p);
+			else if (_idcmp(&p.source[p.i], "out")) _out(&p);
 			else if (p.source[p.i] == '{')
 			{
 				p.i++;
@@ -359,16 +365,22 @@ mathg::Function::Function(const char *source, char *error) noexcept
 	}
 	catch (std::exception e)
 	{
-		#ifdef _WIN32
-			strcpy_s(error, 512, e.what());
-		#else
-			strcpy(error, e.what());
-		#endif
+		if (error != nullptr)
+		{
+			#ifdef _WIN32
+				strcpy_s(error, error_size, e.what());
+			#else
+				if (strlen(e.what()) < error_size) memcpy(error, e.what(), strlen(e.what()));
+				else memcpy(error, e.what(), error_size);
+				if (error_size != 0) error[error_size - 1] = '\0';
+			#endif
+		}
+		return false;
 	}
 
 	//Compile fragment shader
 	GLuint shader = glCreateShader(GL_FRAGMENT_SHADER);
-	if (shader == MathG::_error) return;
+	if (shader == MathG::_error) return false;
 	const char *processed_cstr = p.source.c_str();
 	glShaderSource(shader, 1, &processed_cstr, nullptr);
 	glCompileShader(shader);
@@ -376,25 +388,25 @@ mathg::Function::Function(const char *source, char *error) noexcept
 	glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
 	if (!success)
 	{
-		glGetShaderInfoLog(shader, 512, nullptr, error);
+		glGetShaderInfoLog(shader, error_size, nullptr, error);
 		glDeleteShader(shader);
-		return;
+		return false;
 	}
 
 	//Linking program
 	_program = glCreateProgram();
-	if (_program == MathG::_error) return;
+	if (_program == MathG::_error) return false;
 	glAttachShader(_program, MathG::_distribute2d);
 	glAttachShader(_program, shader);
 	glLinkProgram(_program);
 	glGetProgramiv(_program, GL_LINK_STATUS, &success);
 	if (!success)
 	{
-		glGetShaderInfoLog(shader, 512, nullptr, error);
+		glGetShaderInfoLog(shader, error_size, nullptr, error);
 		glDeleteShader(shader);
 		glDeleteProgram(_program);
 		_program = MathG::_error;
-		return;
+		return false;
 	}
 
 	//Finding uniforms
@@ -415,7 +427,9 @@ mathg::Function::Function(const char *source, char *error) noexcept
 		_output.height_location = glGetUniformLocation(_program, std::string(_output.name + "_height").c_str());
 
 	//Final check
-	if (!MathG::_gl_ok()) { glDeleteProgram(_program); _program = MathG::_error; }
+	if (!MathG::_gl_ok()) { glDeleteProgram(_program); _program = MathG::_error; return false; }
+
+	return true;
 }
 
 bool mathg::Function::ok() const noexcept
@@ -423,9 +437,20 @@ bool mathg::Function::ok() const noexcept
 	return _program != MathG::_error;
 }
 
-mathg::Function::~Function() noexcept
+void mathg::Function::finalize() noexcept
 {
-	if (_program != MathG::_error) glDeleteProgram(_program);
+	if (_program != MathG::_error)
+	{
+		glDeleteProgram(_program);
+		_program = MathG::_error;
+	}
+	_uniforms.clear();
+	_output = Output();
 }
 
-#endif	//#ifndef MATHG_FUCNTION_SOURCE
+mathg::Function::~Function() noexcept
+{
+	finalize();
+}
+
+#endif	//#ifndef MATHG_FUNCTION_SOURCE

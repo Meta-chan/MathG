@@ -24,6 +24,10 @@ namespace mathg
 		static HGLRC _gc;
 		static WNDCLASS _window_class;
 		static HWND _window;
+		static bool _initialized;
+		static bool _ok;
+
+		static LRESULT CALLBACK _window_proc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) noexcept;
 
 	public:
 		///Initializes Windows environment
