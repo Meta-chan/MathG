@@ -132,7 +132,7 @@ bool mathg::X::init() noexcept
 	XStoreName(_display, _window, "MathG" );
 
 	//Mapping window
-	XMapWindow(_display, _window);
+	//XMapWindow(_display, _window);
 
 	// Get the default screen's GLX extension list
 	const char *glx_extensions = glXQueryExtensionsString(_display, DefaultScreen(_display));

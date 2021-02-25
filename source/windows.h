@@ -38,7 +38,7 @@ bool mathg::Windows::init() noexcept
 	if (RegisterClass(&_window_class) == 0) return false;
 
 	//Create window
-	_window = CreateWindow(TEXT("MathG"), TEXT("MathG"), WS_VISIBLE | WS_OVERLAPPEDWINDOW,
+	_window = CreateWindow(TEXT("MathG"), TEXT("MathG"), 0,
 		0, 0, 100, 100, NULL, NULL, GetModuleHandle(NULL), NULL);
 	if (_window == NULL) return false;
 

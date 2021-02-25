@@ -11,11 +11,18 @@
 #ifndef MATHG_EGL_SOURCE
 #define MATHG_EGL_SOURCE
 
-EGLDisplay mathg::EGL::_display = EGL_NO_DISPLAY;
+EGLDisplay mathg::EGL::_display	= EGL_NO_DISPLAY;
+EGLSurface mathg::EGL::_surface	= EGL_NO_SURFACE;
+EGLContext mathg::EGL::_context = EGL_NO_CONTEXT;
+bool mathg::EGL::_inintialized	= false;
+bool mathg::EGL::_ok			= false;
 
 bool mathg::EGL::init() noexcept
 {
-	const EGLint configAttribs[] = {
+	if (_inintialized) return _ok;
+	_inintialized = true;
+
+	const EGLint config_attributes[] = {
 			EGL_SURFACE_TYPE, EGL_PBUFFER_BIT,
 			EGL_BLUE_SIZE, 8,
 			EGL_GREEN_SIZE, 8,
@@ -24,12 +31,16 @@ bool mathg::EGL::init() noexcept
 			EGL_RENDERABLE_TYPE, EGL_OPENGL_BIT,
 			EGL_NONE };
 
-	const int pbufferWidth = 9;
-	const int pbufferHeight = 9;
+	const EGLint pbuffer_attributes[] = {
+			EGL_WIDTH, 9,
+			EGL_HEIGHT, 9,
+			EGL_NONE,
+	};
 
-	static const EGLint pbufferAttribs[] = {
-			EGL_WIDTH, pbufferWidth,
-			EGL_HEIGHT, pbufferHeight,
+	const EGLint context_attributes[] = {
+			EGL_CONTEXT_MAJOR_VERSION, 3,
+			EGL_CONTEXT_MINOR_VERSION, 3,
+			EGL_CONTEXT_OPENGL_PROFILE_MASK, EGL_CONTEXT_OPENGL_CORE_PROFILE_BIT,
 			EGL_NONE,
 	};
 
@@ -38,30 +49,47 @@ bool mathg::EGL::init() noexcept
 	if (_display == EGL_NO_DISPLAY) return false;
 	EGLint major, minor;
 	if (eglInitialize(_display, &major, &minor) == EGL_FALSE) return false;
-	EGLint numConfigs;
-	EGLConfig eglCfg;
-	if (!eglChooseConfig(_display, configAttribs, &eglCfg, 1, &numConfigs)) return false;
-	EGLSurface eglSurf = eglCreatePbufferSurface(_display, eglCfg, pbufferAttribs);
-	if (eglSurf == EGL_NO_SURFACE) return false;
+	EGLint config_number;
+	EGLConfig config;
+	if (!eglChooseConfig(_display, config_attributes, &config, 1, &config_number)) return false;
+	_surface = eglCreatePbufferSurface(_display, config, pbuffer_attributes);
+	if (_surface == EGL_NO_SURFACE) return false;
 	if (!eglBindAPI(EGL_OPENGL_API)) return false;
-	EGLContext eglCtx = eglCreateContext(_display, eglCfg, EGL_NO_CONTEXT, NULL);
-	if (eglCtx == EGL_NO_CONTEXT) return false;
-	eglMakeCurrent(_display, eglSurf, eglSurf, eglCtx);
+	_context = eglCreateContext(_display, config, EGL_NO_CONTEXT, context_attributes);
+	if (_context == EGL_NO_CONTEXT) return false;
+	if (!eglMakeCurrent(_display, _surface, _surface, _context)) return false;
+
+	_ok = true;
 	return true;
 }
 
 bool mathg::EGL::ok() noexcept
 {
-	return eglCtx != EGL_NO_CONTEXT;
+	return _ok;
 }
 
 void mathg::EGL::finalize() noexcept
 {
+	if (_context != EGL_NO_CONTEXT)
+	{
+		eglDestroyContext(_display, _context);
+		_context = EGL_NO_CONTEXT;
+	}
+
+	if (_surface != EGL_NO_SURFACE)
+	{
+		eglDestroySurface(_display, _surface);
+		_surface = EGL_NO_SURFACE;
+	}
+
 	if (_display != EGL_NO_DISPLAY)
 	{
 		eglTerminate(_display);
 		_display = EGL_NO_DISPLAY;
 	}
+
+	_inintialized = false;
+	_ok = false;
 }
 
-#endif	//#ifndef MATHG_SDL2_SOURCE
+#endif	//#ifndef MATHG_EGL_SOURCE

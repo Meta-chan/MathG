@@ -71,7 +71,7 @@ The purpose of environment is to open `OpenGL 3.3` context (by opening a window 
  - `<mathg/default.h>` \- X11 or Windows environment, defines `mathg::Default`
  - `<mathg/sdl2.h>` \- SDL2 environment, defines `mathg::SDL2`, depends on [SDL2](https://www.libsdl.org)
  - `<mathg/freeglut.h>` \- Freeglut environment, defines `mathg::Freeglut`, depends on [Freeglut](http://freeglut.sourceforge.net)
- - `<mathg/egl.h>` \- EGL environment, defines `mathg::EGL`, depends on [EGL](https://www.khronos.org/egl/)
+ - `<mathg/egl.h>` \- EGL environment, defines `mathg::EGL`, depends on [EGL](https://www.khronos.org/egl/) (not supported)
 
 ### Shaders
 MathG preprocesses source codes into valid `GLSL` shaders. Here is a pair of moments you need to know about:

@@ -53,8 +53,9 @@ bool mathg::Freeglut::init() noexcept
 	glutInitWindowSize(100, 100);
 	_window = glutCreateWindow("MathG");
 	if (_window < 0) return false;
-	glutHideWindow();
 	glutDisplayFunc([]() {});
+	glutHideWindow();
+	glutMainLoopEvent();
 	return true;
 }
 

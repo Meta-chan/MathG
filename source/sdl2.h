@@ -19,7 +19,7 @@ bool mathg::SDL2::init() noexcept
 	if (SDL_Init(SDL_INIT_VIDEO) < 0) return false;
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
-	_window = SDL_CreateWindow("MathG", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 100, 100, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
+	_window = SDL_CreateWindow("MathG", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 100, 100, SDL_WINDOW_OPENGL | SDL_WINDOW_HIDDEN);
 	if (_window == nullptr) return false;
 	_context = SDL_GL_CreateContext(_window);
 	if (_context == nullptr) return false;
@@ -39,7 +39,7 @@ void mathg::SDL2::finalize() noexcept
 		_context = nullptr;
 	}
 
-	if (_window != nullptr) =
+	if (_window != nullptr)
 	{
 		SDL_DestroyWindow(_window);
 		_window = nullptr;

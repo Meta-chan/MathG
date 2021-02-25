@@ -21,6 +21,10 @@ namespace mathg
 	{
 	private:
 		static EGLDisplay _display;
+		static EGLSurface _surface;
+		static EGLContext _context;
+		static bool _inintialized;
+		static bool _ok;
 
 	public:
 		///Initializes EGL environment
