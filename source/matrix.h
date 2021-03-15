@@ -68,7 +68,7 @@ bool mathg::Matrix::_bind(size_t n, Matrix **matrixes, GLint *positions) noexcep
 	//Bind textures in new units
 	for (size_t j = 0; j < n; j++)
 	{
-		if (positions[j] == -1 && _texture_units.size() < MathG::_max_binded)
+		if (positions[j] == -1 && _texture_units.size() < (size_t)MathG::_max_binded)
 		{
 			_texture_units.push_back(TextureUnit());
 			glActiveTexture(GL_TEXTURE0 + (GLenum)_texture_units.size() - 1);
@@ -94,7 +94,7 @@ bool mathg::Matrix::_bind(size_t n, Matrix **matrixes, GLint *positions) noexcep
 		{
 			size_t oldest_age = 0;
 			GLenum oldest = 0;
-			for (GLint i = 0; i < _texture_units.size(); i++)
+			for (GLenum i = 0; i < _texture_units.size(); i++)
 			{
 				if (_texture_units[i].age > oldest_age)
 				{
@@ -265,6 +265,8 @@ bool mathg::Matrix::store(const void *data) noexcept
 bool mathg::Matrix::store_row(GLint row, void *data) noexcept
 {
 	assert(ok());
+	assert(row >= 0 && row < _height);
+
 	GLint position;
 	Matrix *matrix = this;
 	if (!_bind(1, &matrix, &position)) return false;
@@ -292,6 +294,8 @@ bool mathg::Matrix::store_row(GLint row, void *data) noexcept
 bool mathg::Matrix::store_column(GLint column, void *data) noexcept
 {
 	assert(ok());
+	assert(column >= 0 && column < _width);
+
 	GLint position;
 	Matrix *matrix = this;
 	if (!_bind(1, &matrix, &position)) return false;
@@ -319,6 +323,9 @@ bool mathg::Matrix::store_column(GLint column, void *data) noexcept
 bool mathg::Matrix::store_element(GLint row, GLint column, void *data) noexcept
 {
 	assert(ok());
+	assert(row >= 0 && row < _height);
+	assert(column >= 0 && column < _width);
+
 	GLint position;
 	Matrix *matrix = this;
 	if (!_bind(1, &matrix, &position)) return false;
@@ -404,6 +411,7 @@ bool mathg::Matrix::assign(const Function *function, ...) noexcept
 	{
 		if (function->_uniforms[i].matrix)
 		{
+			va_arg(arguments, Matrix*);
 			glUniform1i(function->_uniforms[i].location, positions[nmatrixes]);
 			if (function->_uniforms[i].height_location != MathG::_error)
 				glUniform1i(function->_uniforms[i].height_location, matrixes[nmatrixes]->_height);
