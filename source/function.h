@@ -363,7 +363,7 @@ bool mathg::Function::init(const char *source, char *error, GLsizei error_size) 
 		if (p.uses_double) p.source.insert(0, "#extension GL_ARB_gpu_shader_fp64 : enable\n");
 		p.source.insert(0, "#version 330 core\n");
 	}
-	catch (std::exception e)
+	catch (std::exception &e)
 	{
 		if (error != nullptr)
 		{

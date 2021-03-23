@@ -390,7 +390,7 @@ bool mathg::Matrix::assign(const Function *function, ...) noexcept
 			}
 		}
 	}
-	catch (std::exception e)
+	catch (...)
 	{
 		va_end(arguments);
 		return false;
