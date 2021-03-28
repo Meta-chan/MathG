@@ -8,7 +8,7 @@
 	Reinventing bicycles since 2020
 */
 
-#define MATHG_IMPLEMENT
+#define MATHG_INCLUDE
 #include "include/mathg/default.h"
 #include "include/mathg/matrix.h"
 

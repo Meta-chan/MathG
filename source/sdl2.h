@@ -8,9 +8,6 @@
 	Reinventing bicycles since 2020
 */
 
-#ifndef MATHG_SDL2_SOURCE
-#define MATHG_SDL2_SOURCE
-
 SDL_Window *mathg::SDL2::_window	= nullptr;
 SDL_GLContext mathg::SDL2::_context	= NULL;
 
@@ -45,5 +42,3 @@ void mathg::SDL2::finalize() noexcept
 		_window = nullptr;
 	}
 }
-
-#endif	//#ifndef MATHG_SDL2_SOURCE

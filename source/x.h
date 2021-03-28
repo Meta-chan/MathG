@@ -8,9 +8,6 @@
 	Reinventing bicycles since 2020
 */
 
-#ifndef MATHG_X_SOURCE
-#define MATHG_X_SOURCE
-
 #include <string.h>
 
 Display *mathg::X::_display		= nullptr;
@@ -220,5 +217,3 @@ void mathg::X::finalize() noexcept
 	_initialized = false;
 	_ok = false;
 }
-
-#endif	//#ifndef MATHG_X_SOURCE

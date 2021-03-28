@@ -45,6 +45,15 @@ namespace mathg
 	};
 }
 
+#endif	//#ifndef MATHG
+
+#ifdef MATHG_INCLUDE
+	#ifndef MATHG_SOURCE
+		#define MATHG_SOURCE
+		#include "../../source/mathg.h"
+	#endif
+#endif
+
 /**@mainpage Welcome to MathG!
 # Welcome to MathG!
 Take a look at the following example:
@@ -86,7 +95,7 @@ And that's it! We performed matrix multiplication in GPU!
 ### Structure and dependencies
 MathG core depends on [GLEW](http://glew.sourceforge.net) and requires `OpenGL 3.3` context. If you want to provide this context yourself, then include bare `MathG`:
 ```
-#define MATHG_IMPLEMENT
+#define MATHG_INCLUDE
 #include <mathg/matrix.h>
 
 int main()
@@ -99,7 +108,7 @@ int main()
 
 But if you don't want to care about `OpenGL` context, use one of environments!
 ```
-#define MATHG_IMPLEMENT
+#define MATHG_INCLUDE
 #include <mathg/default.h>
 #include <mathg/matrix.h>
 
@@ -134,9 +143,3 @@ The code can be potentially run at every platform that supports `OpenGL 3.3`. Cu
 
 ###### P.S. My code is not dirty, it is alternatively clean.
 */
-
-#ifdef MATHG_IMPLEMENT
-	#include "../../source/mathg.h"
-#endif
-
-#endif	//#ifndef MATHG

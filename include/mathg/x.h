@@ -45,8 +45,11 @@ namespace mathg
 	};
 }
 
-#ifdef MATHG_IMPLEMENT
-	#include "../../source/x.h"
-#endif
-
 #endif	//#ifndef MATHG_X
+
+#ifdef MATHG_INCLUDE
+	#ifndef MATHG_X_SOURCE
+		#define MATHG_X_SOURCE
+		#include "../../source/x.h"
+	#endif
+#endif

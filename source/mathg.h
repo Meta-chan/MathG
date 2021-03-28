@@ -8,11 +8,6 @@
 	Reinventing bicycles since 2020
 */
 
-#ifndef MATHG_MATHG_SOURCE
-#define MATHG_MATHG_SOURCE
-
-#include "../include/mathg/matrix.h"
-
 const GLuint mathg::MathG::_error	= (GLuint)-1;
 bool mathg::MathG::_ok				= false;
 bool mathg::MathG::_initialized		= false;
@@ -105,5 +100,3 @@ void mathg::MathG::finalize() noexcept
 	_ok = false;
 	_initialized = false;
 }
-
-#endif	//#ifndef MATHG_MATHG_SOURCE

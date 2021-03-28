@@ -11,6 +11,7 @@
 #ifndef MATHG_FREEGLUT
 #define MATHG_FREEGLUT
 
+#include "mathg.h"
 #include <GL/glew.h>
 #include <GL/freeglut.h>
 
@@ -32,8 +33,11 @@ namespace mathg
 	};
 }
 
-#ifdef MATHG_IMPLEMENT
-	#include "../../source/freeglut.h"
-#endif
-
 #endif	//#ifndef MATHG_FREEGLUT
+
+#ifdef MATHG_INCLUDE
+	#ifndef MATHG_FREEGLUT_SOURCE
+		#define MATHG_FREEGLUT_SOURCE
+		#include "../../source/freeglut.h"
+	#endif
+#endif

@@ -8,8 +8,8 @@
 	Reinventing bicycles since 2020
 */
 
-#ifndef MATHG_EGL
-#define MATHG_EGL
+#ifndef MATHG_WINDOWS
+#define MATHG_WINDOWS
 
 #include <GL/glew.h>
 #include <Windows.h>
@@ -39,8 +39,11 @@ namespace mathg
 	};
 }
 
-#ifdef MATHG_IMPLEMENT
-	#include "../../source/windows.h"
-#endif
+#endif	//#ifndef MATHG_WINDOWS
 
-#endif	//#ifndef MATHG_EGL
+#ifdef MATHG_INCLUDE
+	#ifndef MATHG_WINDOWS_SOURCE
+		#define MATHG_WINDOWS_SOURCE
+		#include "../../source/windows.h"
+	#endif
+#endif

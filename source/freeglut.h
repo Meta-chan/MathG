@@ -8,9 +8,6 @@
 	Reinventing bicycles since 2020
 */
 
-#ifndef MATHG_FREEGLUT_SOURCE
-#define MATHG_FREEGLUT_SOURCE
-
 #ifdef _WIN32	
 	#include <shellapi.h>
 #else
@@ -72,5 +69,3 @@ void mathg::Freeglut::finalize() noexcept
 		_window = -1;
 	}
 }
-
-#endif

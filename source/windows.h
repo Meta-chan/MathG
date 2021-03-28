@@ -8,10 +8,6 @@
 	Reinventing bicycles since 2020
 */
 
-#ifndef MATHG_WINDOWS_SOURCE
-#define MATHG_WINDOWS_SOURCE
-
-
 HDC mathg::Windows::_dc					= NULL;
 HGLRC mathg::Windows::_gc				= NULL;
 WNDCLASS mathg::Windows::_window_class	= { 0 };
@@ -98,5 +94,3 @@ void mathg::Windows::finalize() noexcept
 	_initialized = false;
 	_ok = false;
 }
-
-#endif	//#ifndef MATHG_SDL2_SOURCE

@@ -11,16 +11,13 @@
 #ifndef MATHG_FUNCTION
 #define MATHG_FUNCTION
 
-#include "type.h"
 #include "mathg.h"
-#include <GL/glew.h>
+#include "type.h"
 #include <vector>
 #include <string>
 
 namespace mathg
 {
-	class Matrix;
-
 	///Function to be performed on matrixes
 	class Function
 	{
@@ -93,8 +90,11 @@ namespace mathg
 	};
 }
 
-#ifdef MATHG_IMPLEMENT
-	#include "../../source/function.h"
-#endif
-
 #endif	//#ifndef MATHG_FUNCTION
+
+#ifdef MATHG_INCLUDE
+	#ifndef MATHG_FUNCTION_SOURCE
+		#define MATHG_FUNCTION_SOURCE
+		#include "../../source/function.h"
+	#endif
+#endif

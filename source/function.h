@@ -8,9 +8,6 @@
 	Reinventing bicycles since 2020
 */
 
-#ifndef MATHG_FUNCTION_SOURCE
-#define MATHG_FUNCTION_SOURCE
-
 #include <stdexcept>
 #include <string>
 #include <string.h>
@@ -452,5 +449,3 @@ mathg::Function::~Function() noexcept
 {
 	finalize();
 }
-
-#endif	//#ifndef MATHG_FUNCTION_SOURCE

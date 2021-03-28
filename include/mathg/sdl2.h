@@ -39,8 +39,11 @@ namespace mathg
 	};
 }
 
-#ifdef MATHG_IMPLEMENT
-	#include "../../source/sdl2.h"
-#endif
-
 #endif	//#ifndef MATHG_SDL2
+
+#ifdef MATHG_INCLUDE
+	#ifndef MATHG_SDL2_SOURCE
+		#define MATHG_SDL2_SOURCE
+		#include "../../source/sdl2.h"
+	#endif
+#endif

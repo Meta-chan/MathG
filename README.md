@@ -38,7 +38,7 @@ And that's it! We performed matrix multiplication in GPU!
 ### Structure and dependencies
 MathG core depends on [GLEW](http://glew.sourceforge.net) and requires `OpenGL 3.3` context. If you want to provide this context yourself, then include bare `MathG`:
 ```c++
-#define MATHG_IMPLEMENT
+#define MATHG_INCLUDE
 #include <mathg/matrix.h>
 
 int main()
@@ -51,7 +51,7 @@ int main()
 
 But if you don't want to care about `OpenGL` context, use one of environments!
 ```c++
-#define MATHG_IMPLEMENT
+#define MATHG_INCLUDE
 #include <mathg/default.h>
 #include <mathg/matrix.h>
 

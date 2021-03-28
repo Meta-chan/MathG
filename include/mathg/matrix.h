@@ -13,9 +13,7 @@
 
 #include "type.h"
 #include "mathg.h"
-#include "function.h"
 #include <vector>
-#include <GL/glew.h>
 
 namespace mathg
 {	
@@ -96,8 +94,11 @@ namespace mathg
 	};
 }
 
-#ifdef MATHG_IMPLEMENT
-	#include "../../source/matrix.h"
-#endif
-
 #endif	//#ifndef MATHG
+
+#ifdef MATHG_INCLUDE
+	#ifndef MATHG_MATRIX_SOURCE
+		#define MATHG_MATRIX_SOURCE
+		#include "../../source/matrix.h"
+	#endif
+#endif

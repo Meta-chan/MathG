@@ -8,9 +8,6 @@
 	Reinventing bicycles since 2020
 */
 
-#ifndef MATHG_EGL_SOURCE
-#define MATHG_EGL_SOURCE
-
 EGLDisplay mathg::EGL::_display	= EGL_NO_DISPLAY;
 EGLSurface mathg::EGL::_surface	= EGL_NO_SURFACE;
 EGLContext mathg::EGL::_context = EGL_NO_CONTEXT;
@@ -91,5 +88,3 @@ void mathg::EGL::finalize() noexcept
 	_inintialized = false;
 	_ok = false;
 }
-
-#endif	//#ifndef MATHG_EGL_SOURCE

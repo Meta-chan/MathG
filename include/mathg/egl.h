@@ -11,6 +11,7 @@
 #ifndef MATHG_EGL
 #define MATHG_EGL
 
+#include "mathg.h"
 #include <GL/glew.h>
 #include <EGL/egl.h>
 
@@ -36,8 +37,11 @@ namespace mathg
 	};
 }
 
-#ifdef MATHG_IMPLEMENT
-	#include "../../source/egl.h"
-#endif
-
 #endif	//#ifndef MATHG_EGL
+
+#ifdef MATHG_INCLUDE
+	#ifndef MATHG_EGL_SOURCE
+		#define MATHG_EGL_SOURCE
+		#include "../../source/egl.h"
+	#endif
+#endif

@@ -8,9 +8,6 @@
 	Reinventing bicycles since 2020
 */
 
-#ifndef MATHG_MATRIX_SOURCE
-#define MATHG_MATRIX_SOURCE
-
 #include "../include/mathg/function.h"
 #include <vector>
 #include <stdexcept>
@@ -480,5 +477,3 @@ mathg::Matrix::~Matrix() noexcept
 {
 	finalize();
 }
-
-#endif	//#ifndef MATHG_MATRIX_SOURCE
